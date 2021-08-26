@@ -9,7 +9,7 @@ import os
 
 import pandas as pd
 from myutil.myutil import load_itk, save_itk
-from mymodules.path import PathPos as Path
+from ssc_scoring.mymodules.path import PathPos as Path
 
 def main():
     mypath = Path()

@@ -10,7 +10,7 @@ from scipy.ndimage import morphology
 import numpy as np
 import time
 from skimage.measure import label
-from mymodules.path import PathScore as Path
+from ssc_scoring.mymodules.path import PathScore as Path
 
 
 def largest_connected_parts(bw_img: np.ndarray, nb_need_saved=2):

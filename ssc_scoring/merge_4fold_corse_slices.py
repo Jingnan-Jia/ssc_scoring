@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import glob
 import shutil
-from mymodules.path import PathPos
+from ssc_scoring.mymodules.path import PathPos
 
 def merge_corse_slices(ex_ls) -> None:
     """Merge/copy the predicted slices from 4 folds into the same directory.

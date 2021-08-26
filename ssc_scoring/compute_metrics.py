@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from mymodules.confusion_test import confusion
+from ssc_scoring.mymodules.confusion_test import confusion
 
 
 def metrics(pred_fpath: str, label_fpath: str, bland_in_1: bool, adap_markersize: bool) -> None:

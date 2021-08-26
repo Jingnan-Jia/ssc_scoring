@@ -15,21 +15,21 @@ from statistics import mean
 from typing import Dict, Optional, Union
 import numpy as np
 import myutil.myutil as futil
-from mymodules.path import PathPos, PathPosInit
+from ssc_scoring.mymodules.path import PathPos, PathPosInit
 
 import myutil.myutil as futil
 import torch
 import torch.nn as nn
 
-from mymodules.inference import record_best_preds
-from mymodules.mydata import LoadPos2Score
-from mymodules.myloss import get_loss
-from mymodules.networks import get_net_pos
-from mymodules.networks import med3d_resnet as med3d
-from mymodules.path import PathPos, PathPosInit
+from ssc_scoring.mymodules.inference import record_best_preds
+from ssc_scoring.mymodules.mydata import LoadPos2Score
+from ssc_scoring.mymodules.myloss import get_loss
+from ssc_scoring.mymodules.networks import get_net_pos
+from ssc_scoring.mymodules.networks import med3d_resnet as med3d
+from ssc_scoring.mymodules.path import PathPos, PathPosInit
 
-from mymodules.set_args_pos import get_args
-from mymodules.tool import record_1st, record_2nd, record_GPU_info, eval_net_mae, compute_metrics
+from ssc_scoring.mymodules.set_args_pos import get_args
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_GPU_info, eval_net_mae, compute_metrics
 import pandas as pd
 from monai.transforms import CastToTyped
 

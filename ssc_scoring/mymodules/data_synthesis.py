@@ -45,6 +45,9 @@ def savefig(save_flag: bool, img: np.ndarray, fpath: str) -> None:
     Returns:
         None. Image will be saved to disk.
 
+    Use case:
+        :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`
+
     """
 
     directory = os.path.dirname(fpath)
@@ -70,6 +73,9 @@ def resort_pts_for_convex(pts_ls: list) -> list:
 
     Returns:
         A new list of points. Connecting the points in the new list can get a convex.
+
+    Use case:
+        :func:`ssc_scoring.mymodules.data_synthesis.gen_pts`
 
     """
     pts_ls = sorted(pts_ls, key=lambda x: x[0])  # sort list by the x position
@@ -124,6 +130,10 @@ def gen_pts(nb_points: int, limit: int, radius: int) -> np.ndarray:
 
     Returns:
         A list of points.
+
+    Use case:
+        :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`
+
     """
     pts_ls: list = []
     for i in range(nb_points):

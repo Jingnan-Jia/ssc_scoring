@@ -4,7 +4,7 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 import os
-from mymodules.confusion_test import confusion
+from ssc_scoring.mymodules.confusion_test import confusion
 import myutil.myutil as futil
 from ssc_scoring.compute_metrics import metrics
 # pred_1 = "/data/jjia/ssc_scoring/observer_agreement/16_patients/LKT2_16patients.csv"

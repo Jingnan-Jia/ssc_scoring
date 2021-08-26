@@ -21,15 +21,15 @@ sys.path.append("..")
 matplotlib.use('Agg')
 from statistics import mean
 import threading
-from mymodules.set_args import get_args
-from mymodules.tool import record_1st, record_2nd, record_GPU_info, compute_metrics
-from mymodules.path import PathScoreInit
-from mymodules.path import PathScore as Path
-from mymodules.myloss import get_loss
-from mymodules.networks.cnn_fc2d import get_net, ReconNet
-from mymodules.mydata import LoadScore
-from mymodules.inference import record_best_preds, round_to_5
-from mymodules.path import PathPos, PathPosInit
+from ssc_scoring.mymodules.set_args import get_args
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_GPU_info, compute_metrics
+from ssc_scoring.mymodules.path import PathScoreInit
+from ssc_scoring.mymodules.path import PathScore as Path
+from ssc_scoring.mymodules.myloss import get_loss
+from ssc_scoring.mymodules.networks.cnn_fc2d import get_net, ReconNet
+from ssc_scoring.mymodules.mydata import LoadScore
+from ssc_scoring.mymodules.inference import record_best_preds, round_to_5
+from ssc_scoring.mymodules.path import PathPos, PathPosInit
 
 LogType = Optional[Union[int, float, str]]  # int includes bool
 log_dict: Dict[str, LogType] = {}  # a global dict to store variables saved to log files
