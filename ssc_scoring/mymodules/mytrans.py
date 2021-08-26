@@ -18,34 +18,6 @@ import os
 TransInOut = Mapping[Hashable, Optional[Union[np.ndarray, str]]]
 
 
-class RescaleToNeg1500Pos1500d(Transform):
-    """ Rescale voxel values to [-1, 1], then to [-1500, 1500].
-
-    """
-
-    def __init__(self, key='image_key'):
-        self.norm = NormNeg1To1d()
-        self.key = key
-
-    def __call__(self, data: Mapping[str, Union[np.ndarray, str]]) -> Dict[str, np.ndarray]:
-        data = self.norm(data)
-        data[self.key] = data[self.key] * 1500
-        return data
-
-
-class NormNeg1To1d(Transform):
-    """Truncate voxel values to [-1500, 1500], then rescale voxel values to [-1, 1]."""
-
-    def __init__(self, key='image_key'):
-        self.key = key
-
-    def __call__(self, data: Mapping[str, Union[np.ndarray, str]]) -> Dict[str, np.ndarray]:
-        min_value, max_value = -1500, 1500
-
-        data[self.key] = ((data[self.key] - min_value) / (max_value - min_value) - 0.5) * 2
-        return data
-
-
 class LoadDatad(Transform):
     """ Load data.
 

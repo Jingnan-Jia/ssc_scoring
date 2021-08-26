@@ -10,8 +10,9 @@ from argparse import Namespace
 from ssc_scoring.mymodules.data_synthesis import SysthesisNewSampled
 from ssc_scoring.mymodules.mytrans import RandomAffined, RandomHorizontalFlipd, RandomVerticalFlipd, \
     RandGaussianNoised, LoadDatad, NormImgPosd, AddChanneld, RandomCropPosd, \
-    CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd, RescaleToNeg1500Pos1500d, NormNeg1To1d
+    CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd
 from ssc_scoring.mymodules.path import PathScore
+from monai.transforms import ScaleIntensityRange
 
 
 def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace = None) -> monai.transforms.Compose:
@@ -64,8 +65,8 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
         xforms.extend([AddChanneld()])
 
     # xforms.append(NormImgPosd())
-    xforms.append(NormNeg1To1d())
-    # xforms.append(RescaleToNeg1500Pos1500d())
+    xforms.append(ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
+    xforms.append(ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=-1500.0, b_max=1500.0, clip=True))
 
     transform = transforms.Compose(xforms)
 
