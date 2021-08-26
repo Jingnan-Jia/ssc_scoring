@@ -16,7 +16,7 @@ from sklearn.model_selection import KFold
 from monai.data import DataLoader
 from monai.transforms import Transform
 from ssc_scoring.mymodules.composed_trans import xformd_pos, xformd_score, xformd_pos2score
-from ssc_scoring.mymodules.datasets import SysDataset
+from ssc_scoring.mymodules.datasets import SynDataset
 from ssc_scoring.mymodules.tool import sampler_by_disext
 
 
@@ -274,33 +274,39 @@ class LoadScore(LoaderInit, Transform):
     def xformd(self, *arg, **karg):
         return xformd_score(*arg, **karg)
 
-    def load(self, merge=0):
+    def load(self, merge: bool = False):
+        """
+        Load all dataloaders: train, validaug, valid, test.
+        Args:
+            merge: if True, merge all data together into valid_dataset, return valid_dataloader which include all data.
+            This is switched on at :func:`ssc_scoring.run.train`.
+        Returns:
+            All data_loaders.
+
+        """
         tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = self.prepare_data()
         for x, y, mode in zip([tr_x, vd_x, ts_x], [tr_y, vd_y, ts_y], ['train', 'valid', 'test']):
             self.save_xy(x, y, mode)
         # tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:10], tr_y[:10], vd_x[:10], vd_y[:10], ts_x[:10], ts_y[:10]
-        # print(tr_x)
-        print('valid_x for score')
-        print(vd_x)
+        print(f'valid_x for score: \n {vd_x}')
+
         if merge != 0:
             all_x = [*tr_x, *vd_x, *ts_x]
             all_y = [*tr_y, *vd_y, *ts_y]
-            all_dataset = SysDataset(all_x, all_y, transform=self.xformd("valid", synthesis=self.sys, args=self.args),
-                                 synthesis=False)
+            all_dataset = SynDataset(all_x, all_y, transform=self.xformd("valid", synthesis=self.sys, args=self.args),
+                                     synthesis=False)
             all_loader = DataLoader(all_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.workers,
                                          pin_memory=True)
             return all_loader
 
-        # else:
-        #     raise Exception("synthesis_data can not be set with sampler !")
-        tr_dataset = SysDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args),
+        tr_dataset = SynDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args),
                                 synthesis=self.sys)
-        vd_data_aug = SysDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args),
+        vd_data_aug = SynDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args),
                                  synthesis=self.sys)
-        vd_dataset = SysDataset(vd_x, vd_y, transform=self.xformd("valid", synthesis=False, args=self.args),
-                                synthesis=False)
-        ts_dataset = SysDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args),
-                                synthesis=False)  # valid original data
+        vd_dataset = SynDataset(vd_x, vd_y, transform=self.xformd("valid", synthesis=False, args=self.args),
+                                synthesis=False)  # valid original data, without synthetic images
+        ts_dataset = SynDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args),
+                                synthesis=False)  # test original data, without synthetic images
         sampler = sampler_by_disext(tr_y, self.sys_ratio) if self.sampler else None
         print(f'sampler is {sampler}')
         tr_shuffle = True if sampler is None else False
@@ -311,7 +317,7 @@ class LoadScore(LoaderInit, Transform):
 
         valid_dataloader = DataLoader(vd_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.workers,
                                       pin_memory=True)
-        # valid_dataloader = train_dataloader
+
         test_dataloader = DataLoader(ts_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.workers,
                                      pin_memory=True)
         return train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader

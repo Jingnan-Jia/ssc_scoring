@@ -26,6 +26,23 @@ Position prediction
 
 Score prediction
 -------------------
+#. Generate lung masks for 2D slices
+
+    The training of score prediction network require synthetic data, in which the lung mask need to be generated
+    in advance. So we have to run this following code to generate lung mask at first.
+
+    #. At first, generate lung masks for 3D CT scans
+
+        .. code-block:: bash
+
+            python extract_lung.py
+
+    #. After that, generate lung masks for 2D slices
+
+        .. code-block:: bash
+
+            python generate_ct_masked_by_lung.py
+
 #. Training and validation for 4 folds separately:
 
     .. code-block:: bash

@@ -74,8 +74,16 @@ class ReconDatasetd(Dataset):
 
 
 
-class SysDataset(Dataset):
-    """SSc scoring dataset."""
+class SynDataset(Dataset):
+    """Dataset for SSc score prediction images. The generated images include some synthetic images.
+
+    .. note::
+
+        All images output from `__init__` function are truncated to [-1500, 1500], then rescale to [0, 1] before
+        being fed to transforms. it's convinent for future transform, especially for
+        :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`.
+
+    """
 
     def __init__(self, data_x_names, data_y_list, index: list = None, transform=None, synthesis=False):
 
@@ -83,15 +91,13 @@ class SysDataset(Dataset):
         if index is not None:
             self.data_x_names = self.data_x_names[index]
             self.data_y_list = self.data_y_list[index]
-        print('loading data ...')
+        print('loading data ...')  # All images are loaded. It is 2D slices, so gpu memory is okay to fit them.
         self.data_x = [futil.load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
-        self.systhesis = synthesis
-        if self.systhesis:
-            mask_end = "_lung_mask"
+        self.synthesis = synthesis
+        if self.synthesis:
+            mask_end = "_lung_mask"  # load all lung masks
             self.lung_masks_names =  [x.split('.mha')[0]+ mask_end + ".mha" for x in tqdm(self.data_x_names)]
-
             self.lung_masks = [futil.load_itk(x, require_ori_sp=False) for x in tqdm(self.lung_masks_names)]
-
 
         self.data_x_np = [i[0] for i in self.data_x]
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
@@ -130,7 +136,7 @@ class SysDataset(Dataset):
                 'space_key': self.sp[idx],
                 'origin_key': self.ori[idx],
                 'fpath_key': self.data_x_names[idx]}
-        if self.systhesis:
+        if self.synthesis:
             new_dict = {'lung_mask_key': self.lung_masks[idx]}
             data.update(new_dict)
         if self.transform:

@@ -293,20 +293,20 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
                 for key in self.keys:
                     d[key], d['label_key'] = self.systhesis(d[key], d['lung_mask_key'])
                     # with train_lock:
-                    print("after systhesis, label is " + str(d['label_key']) + str("\n"))
+                    print("after synthesis, label is " + str(d['label_key']) + str("\n"))
             else:  # No synthesis, number of original images +1
                 with train_lock:
                     ori_nb.value += 1
                     print("ori_nb: " + str(ori_nb.value))
                 # with train_lock:
-                print("No need for systhesis, label is " + str(d['label_key']) + str("\n"))
+                print("No need for synthesis, label is " + str(d['label_key']) + str("\n"))
         else:  # No synthesis, number of original images +1
             with train_lock:
                 ori_nb.value += 1
                 print("ori_nb: " + str(ori_nb.value))
 
             # with train_lock:
-            print("No need for systhesis, label is " + str(d['label_key']) + str("\n"))
+            print("No need for synthesis, label is " + str(d['label_key']) + str("\n"))
 
         self.account_label(d['label_key'][0].item())
         return d
