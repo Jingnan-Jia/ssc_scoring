@@ -2,7 +2,7 @@
 # @Time    : 7/11/21 2:36 PM
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
-# test2
+
 
 import monai
 from torchvision import transforms
@@ -10,7 +10,7 @@ from argparse import Namespace
 from ssc_scoring.mymodules.data_synthesis import SysthesisNewSampled
 from ssc_scoring.mymodules.mytrans import RandomAffined, RandomHorizontalFlipd, RandomVerticalFlipd, \
     RandGaussianNoised, LoadDatad, NormImgPosd, AddChanneld, RandomCropPosd, \
-    CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd, RescaleToNeg1500Pos1500d
+    CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd, RescaleToNeg1500Pos1500d, NormNeg1To1d
 from ssc_scoring.mymodules.path import PathScore
 
 
@@ -64,8 +64,8 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
         xforms.extend([AddChanneld()])
 
     # xforms.append(NormImgPosd())
-    # xforms.append(NormNeg1To1d())
-    xforms.append(RescaleToNeg1500Pos1500d())
+    xforms.append(NormNeg1To1d())
+    # xforms.append(RescaleToNeg1500Pos1500d())
 
     transform = transforms.Compose(xforms)
 

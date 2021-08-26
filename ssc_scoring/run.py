@@ -6,15 +6,15 @@ import copy
 import csv
 import os
 import shutil
+import sys
 import time
 from typing import (Optional, Union, Dict)
 
 import matplotlib
 import myutil.myutil as futil
-import pandas as pd
 import torch
 import torch.nn as nn
-import sys
+
 sys.path.append("..")
 
 # import streamlit as st
@@ -22,35 +22,72 @@ matplotlib.use('Agg')
 from statistics import mean
 import threading
 from ssc_scoring.mymodules.set_args import get_args
-from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_GPU_info, compute_metrics
-from ssc_scoring.mymodules.path import PathScoreInit
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, compute_metrics, get_mae_best
 from ssc_scoring.mymodules.path import PathScore as Path
 from ssc_scoring.mymodules.myloss import get_loss
 from ssc_scoring.mymodules.networks.cnn_fc2d import get_net, ReconNet
 from ssc_scoring.mymodules.mydata import LoadScore
 from ssc_scoring.mymodules.inference import record_best_preds, round_to_5
-from ssc_scoring.mymodules.path import PathPos, PathPosInit
+from ssc_scoring.mymodules.path import PathPos
+from argparse import Namespace
 
-LogType = Optional[Union[int, float, str]]  # int includes bool
-log_dict: Dict[str, LogType] = {}  # a global dict to store variables saved to log files
+LogType = Optional[Union[int, float, str]]  # a global type to store immutable variables saved to log files
 
-def GPU_info(outfile):  # need to be in the main file because it will be executed by another thread
-    gpu_name, gpu_usage, gpu_utis = record_GPU_info(outfile)
+
+def gpu_info(outfile: str) -> None:
+    """Get GPU usage information.
+
+    This function needs to be in the main file because it will be executed by another thread.
+    
+    Args:
+        outfile: The format of `outfile` is: slurm-[JOB_ID].out
+
+    Returns:
+        None. The GPU information will be saved to global variable `log_dict`.
+
+    Example:
+
+    >>> gpu_info('slurm-98234.out')
+
+    """
+    gpu_name, gpu_usage, gpu_utis = record_gpu_info(outfile)
     log_dict['gpuname'], log_dict['gpu_mem_usage'], log_dict['gpu_util'] = gpu_name, gpu_usage, gpu_utis
 
     return None
 
 
-def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, mypath, epoch_idx,
-              valid_mae_best=None):
 
-    if torch.cuda.is_available():
+
+
+def start_run(args, mode, net, dataloader, loss_fun, loss_fun_mae, opt, mypath, epoch_idx,
+              valid_mae_best=None):
+    """Start run one step of training.
+
+    Args:
+        args: args instance
+        mode: Chosen from 'train', 'valid', 'validaug', 'test'.
+        net: Network
+        dataloader: Iterator to generate a batch of data
+        loss_fun: Loss instance
+        loss_fun_mae: Mae instance
+        opt: Optimizer including network parameters and learning rate
+        mypath: My custom path instance
+        epoch_idx: Idx of the current epoch
+        valid_mae_best: Best valid mae
+
+    Returns:
+        valid_mae_best if mode is 'valid' else None
+
+    """
+    print(mode + "ing ......")
+
+    if torch.cuda.is_available():  # Get device and scaler
         device = torch.device("cuda")
         scaler = torch.cuda.amp.GradScaler()
     else:
         device = torch.device("cpu")
+        scaler = None
 
-    print(mode + "ing ......")
     loss_path = mypath.loss(mode)
     if mode == 'train' or mode == 'validaug':
         net.train()
@@ -60,22 +97,18 @@ def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, 
     batch_idx = 0
     total_loss = 0
     total_loss_mae = 0
-    total_loss_mae_end5 = 0
+    total_loss_mae_end5 = 0  # Goh score is ended by 5
 
-    # with torch.profiler.record_function("training_function"):
     t0 = time.time()
-    t_load_data, t_to_device, t_train_per_step = [], [], []
+    t_load_data, t_to_device, t_train_per_step = [], [], []  # time of loading data, to_device and train a step
     for data in dataloader:
-        # print('get data')
         if 'label_key' not in data:
             batch_x, batch_y = data['image_key'], data['image_key']
         else:
             batch_x, batch_y = data['image_key'], data['label_key']
-            print('batch_y is: ')
-            print(batch_y)
+            print(f'batch_y is: {batch_y}')
         t1 = time.time()
         t_load_data.append(t1 - t0)
-
 
         # with torch.profiler.record_function("to_device"):
 
@@ -89,8 +122,9 @@ def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, 
         if args.r_c == "c":
             batch_y = batch_y.type(torch.LongTensor)  # crossentropy requires LongTensor
             batch_y = batch_y.to(device)
-        if device == torch.device('cuda'):
+        if device == torch.device('cuda'):  # on GPU
             with torch.cuda.amp.autocast():
+
                 if mode != 'train':
                     with torch.no_grad():
                         pred = net(batch_x)
@@ -116,7 +150,7 @@ def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, 
                 scaler.step(opt)
                 scaler.update()
 
-        else:
+        else:  # on CPU
             if mode != 'train':
                 with torch.no_grad():
                     pred = net(batch_x)
@@ -153,10 +187,8 @@ def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, 
         batch_idx += 1
 
         if 'gpuname' not in log_dict:
-            p1 = threading.Thread(target=GPU_info, args=(args.outfile, ))
+            p1 = threading.Thread(target=gpu_info, args=(args.outfile,))
             p1.start()
-
-        t0 = t3  # reset the t0
 
     if "t_load_data" not in log_dict:
         t_load_data, t_to_device, t_train_per_step = mean(t_load_data), mean(t_to_device), mean(t_train_per_step)
@@ -193,33 +225,37 @@ def start_run(args, mode, net, dataloader, device, loss_fun, loss_fun_mae, opt, 
         return None
 
 
-def get_mae_best(fpath):
-    loss = pd.read_csv(fpath)
-    mae = min(loss['mae'].to_list())
-    return mae
+def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, LogType]:
+    """The main body of the training process.
 
+    Args:
+        args: argparse instance
+        id_: experiment ID
+        log_dict: a dict to save super parameters and metrics
 
-def train(args, id_: int, log_dict):
+    Returns:
+        log_dict
+
+    """
     mypath = Path(id_)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    net = get_net(args.net, 3, args) if args.r_c == "r" else get_net(args.net, 21, args)
+    net = get_net(args.net, 3, args) if args.r_c == "r" else get_net(args.net, 21, args)  # 3 scores per image
     net_parameters = futil.count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
     log_dict['net_parameters'] = net_parameters
-    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"
-    seed = 49
+    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
+    seed = 49  # for split of  cross-validation
     log_dict['data_shuffle_seed'] = seed
     net = net.to(device)
-    print('move net t device')
+    print('move net to device')
 
     loss_fun = get_loss(loss=args.loss)
     loss_fun_mae = nn.L1Loss()
-    lr = 1e-4
+    lr = 1e-4  # learning rate is fixed
     log_dict['lr'] = lr
-    opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=args.weight_decay)
+    opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=args.weight_decay)  # weight decay is L2 weight norm
 
-
-    if args.corse_pred_id not in [0, None] :
+    if args.corse_pred_id not in [0, None]:  # todo: why?
         mypath_pos = PathPos(args.corse_pred_id)
         mypath.corse_pred_dir = os.path.join(mypath_pos.id_dir, 'predicted_slices')
         # all_loader = LoadScore(mypath, label_file, seed, args)
@@ -235,19 +271,19 @@ def train(args, id_: int, log_dict):
     all_loader = LoadScore(mypath, label_file, seed, args)
     train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
 
-    if args.eval_id:
+    if args.eval_id:  # evaluate trained network
         mypath2 = Path(args.eval_id)
-        if args.mode == "transfer_learning":
+        if args.mode == "transfer_learning":  # todo: using other pre-trained weights apart from imageNet
             net_recon = ReconNet(net)
             net_recon.load_state_dict(torch.load(mypath2.model_fpath, map_location=torch.device("cpu")))
             net.features = copy.deepcopy(net_recon.features)  # only use the pretrained features
             del net_recon
             valid_mae_best = 10000
 
-        elif args.mode in ["continue_train", "infer"]:
-            shutil.copy(mypath2.model_fpath, mypath.model_fpath)  # make sure there is at least one model there
+        elif args.mode in ["continue_train", "infer"]:  # Load old weights for continue_train or inference
+            shutil.copy(mypath2.model_fpath, mypath.model_fpath)  # copy old network weight to new directory
             for mo in ['train', 'valid', 'test']:
-                shutil.copy(mypath2.loss(mo), mypath.loss(mo))  # make sure there is at least one model there
+                shutil.copy(mypath2.loss(mo), mypath.loss(mo))  # copy old loss file to new directory
             try:
                 shutil.copy(mypath2.loss('validaug'), mypath.loss('validaug'))
             except:
@@ -258,41 +294,35 @@ def train(args, id_: int, log_dict):
         else:
             raise Exception("wrong mode: " + args.mode)
     else:
-        valid_mae_best = 10000
-    if args.kd_t_name:
-        from ssc_scoring.mymodules.networks.kd import get_enc_t, EncSPlusConv
-        enc_t = get_enc_t(args.kd_t_name)
-        enc_s = EncSPlusConv(enc_t, net)
+        valid_mae_best = 10000  # initiate mae_best as a very big value
 
     epochs = args.epochs
 
-    for i in range(epochs):  # 20000 epochs
+    for i in range(epochs):  # loop epochs
         start_run(args, 'train', net, train_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
 
-        # run the validation
-        if (i % args.valid_period == 0) or (i > epochs * 0.8):
-            # with torch.profiler.record_function("valid_validaug_test"):
+        # run the validation & testing
+        if (i % args.valid_period == 0) or (i > epochs * 0.9):  # validation period become 1 at the end
             valid_mae_best = start_run(args, 'valid', net, valid_dataloader, device, loss_fun, loss_fun_mae, opt,
                                        mypath, i, valid_mae_best)
             start_run(args, 'validaug', net, validaug_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
             start_run(args, 'test', net, test_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
-    print('start save trace')
 
-    data_loaders = {'train': train_dataloader, 'valid': valid_dataloader, 'validaug': validaug_dataloader, 'test': test_dataloader}
+    data_loaders = {'train': train_dataloader,
+                    'valid': valid_dataloader,
+                    'validaug': validaug_dataloader,
+                    'test': test_dataloader}
+    # Load the best model, get the corresponding prediction and metrics
     record_best_preds(net, data_loaders, mypath, args)
     log_dict = compute_metrics(mypath, Path(args.eval_id), log_dict)
-    print('Finish all things!')
+    print('Finish all training/validation/testing + metrics!')
     return log_dict
 
 
 if __name__ == "__main__":
     args = get_args()
-
-    # set some global variables here, like log_dict, device, amp
-    LogType = Optional[Union[int, float, str]]  # int includes bool
-    LogDict = Dict[str, LogType]
-    log_dict: LogDict = {}  # a global dict to store immutable variables saved to log files
+    log_dict: Dict[str, LogType] = {}  # a global dict to store variables saved to log files
 
     id: int = record_1st('score', args)  # write super parameters from set_args.py to record file.
     log_dict = train(args, id, log_dict)
-    record_2nd('score', current_id=id, log_dict=log_dict, args=args)  # write other parameters and metrics to record file.
+    record_2nd('score', current_id=id, log_dict=log_dict, args=args)  # write more parameters & metrics to record file.
