@@ -209,11 +209,11 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.gg_increase = gg_increase
 
 
-        ret_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
-        gg_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
+        self.ret_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
+        self.gg_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
 
-        self.retp_temp = self.generate_candidate(ret_eggs_fpath)
-        self.gg_temp = self.generate_candidate(gg_eggs_fpath)
+        self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
+        self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
 
         self.retp_candidate = self.rand_affine_crop(self.retp_temp)
         self.gg_candidate = self.rand_affine_crop(self.gg_temp)
@@ -364,10 +364,14 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             lung_mask = lung_mask.numpy()
 
         self.counter += 1
-        if self.counter == 100:  # update self.retp_candidate
-            self.counter = 0
+        if self.counter == 5:  # update self.retp_candidate
             self.retp_candidate = self.rand_affine_crop(self.retp_temp)
             self.gg_candidate = self.rand_affine_crop(self.gg_temp)
+
+            if self.counter == 20:
+                self.counter = 0
+                self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
+                self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
 
         save_img: bool = False
         savefig(save_img, img, 'image_samples/0_ori_img_' + str(self.counter) + '.png')
