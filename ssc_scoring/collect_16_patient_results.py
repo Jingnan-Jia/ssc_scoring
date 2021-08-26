@@ -7,7 +7,7 @@ from typing import Dict, List
 
 import pandas as pd
 
-from mymodules.path import PathScore as Path
+from ssc_scoring.mymodules.path import PathScore as Path
 
 
 def data_fpath(ex_id_dict: Dict[int, int], pat_id_dict: Dict[int, List[str]]) -> Dict[str, str]:
