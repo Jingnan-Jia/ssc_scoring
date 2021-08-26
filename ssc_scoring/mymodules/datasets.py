@@ -16,6 +16,12 @@ from torch.utils.data import Dataset
 
 
 class ReconDatasetd(Dataset):
+    """
+    This dataset is for reconstruction network.
+
+    .. warning::
+        It is not used yet. This dataset code need to be double checked before using it.
+    """
     def __init__(self, data_x_names, transform=None):
         self.data_x_names = data_x_names
         print("loading 3D CT ...")

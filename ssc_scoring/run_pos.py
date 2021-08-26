@@ -24,13 +24,13 @@ from ssc_scoring.mymodules.myloss import get_loss
 from ssc_scoring.mymodules.networks import get_net_pos, get_net_pos_enc
 from ssc_scoring.mymodules.path import PathPos
 from ssc_scoring.mymodules.set_args_pos import get_args
-from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_GPU_info, eval_net_mae, compute_metrics
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, eval_net_mae, compute_metrics
 # from kd_med import kd_loss, PreTrainedEnc, GetEncSConv
 import kd_med
 
 
 def gpu_info(outfile):  # need to be in the main file because it will be executed by another thread
-    gpu_name, gpu_usage, gpu_utis = record_GPU_info(outfile)
+    gpu_name, gpu_usage, gpu_utis = record_gpu_info(outfile)
     log_dict['gpuname'], log_dict['gpu_mem_usage'], log_dict['gpu_util'] = gpu_name, gpu_usage, gpu_utis
 
     return None

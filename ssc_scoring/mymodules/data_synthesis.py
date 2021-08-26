@@ -180,16 +180,17 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         """Synthesis new image samples.
 
         Args:
-            keys:
-            retp_fpath:
-            gg_fpath:
-            mode:
-            sys_pro_in_0:
-            retp_blur:
-            gg_blur:
-            sampler:
-            gen_gg_as_retp:
-            gg_increase:
+            keys: Always be 'image_key'
+            retp_fpath: Full path for one retp seed
+            gg_fpath: Full path for one gg seed
+            mode: Chosed from 'train' or 'validaug'
+            sys_pro_in_0: Probability to synthesis image when is is healthy
+            retp_blur: Smooth width between retp pattern foreground and healthy background
+            gg_blur: Smooth width between gg pattern foreground and healthy background
+            sampler: If using balanced sampler which leads to balanced label distribution
+            gen_gg_as_retp: If generage gg pattern using the same method as it used by retp
+            gg_increase: Voxel value increase for gg pattern, because gg part is always brighter
+
         """
         super().__init__(keys)
         # self.sys_ratio = sys_ratio
@@ -197,7 +198,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.random_affine = RandomAffine(degrees=180, translate=(0.1, 0.1), scale=(1 - 0.5, 1 + 0.1))
         self.center_crop = CenterCrop(self.image_size)
 
-        self.sys_pro = sys_pro_in_0 if sys_pro_in_0 else 20 / 21
+        self.sys_pro = sys_pro_in_0 if sys_pro_in_0 else 20 / 21 # todo: explain it
 
         self.mode = mode
         self.retp_fpath = retp_fpath  # retp will generated from its egg
@@ -208,7 +209,6 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.gen_gg_as_retp = gen_gg_as_retp
         self.gg_increase = gg_increase
 
-
         self.ret_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
         self.gg_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
 
@@ -218,8 +218,8 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.retp_candidate = self.rand_affine_crop(self.retp_temp)
         self.gg_candidate = self.rand_affine_crop(self.gg_temp)
 
-        self.counter = 0
-        self.systh_y = []
+        self.counter = 0  # Count the number of training (or validaug) images
+        self.synth_y = []  # Labels of synthetic images
         if self.mode == "train":
             self.label_numbers = train_label_numbers
         elif self.mode == 'validaug':
@@ -230,6 +230,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
     def generate_candidate(self, eggs_fpath):
         # ori_image_fpath = fpath.split('.mha')[0] + '_ori.mha'
         egg_fpath = random.choice(eggs_fpath)
+        print(f'randomly select this egg: {egg_fpath}')
         egg = futil.load_itk(egg_fpath)
         # ori = futil.load_itk(ori_image_fpath)
         # normalize the egg using the original image information
@@ -273,18 +274,17 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         if self.mode == "train":
             with train_lock:
                 train_label_numbers[category] = train_label_numbers[category] + 1
-                print(sum(train_label_numbers.values()))
+                print(f'current train label numbers: {sum(train_label_numbers.values())}')
         else:
             with validaug_lock:
                 validaug_label_numbers[category] += 1
-                print(sum(validaug_label_numbers.values()))
+                print(f'current validaug label numbers: {sum(validaug_label_numbers.values())}')
 
     def __call__(self, data):
         d = dict(data)
         print("ori label is: " + str(d['label_key']))
 
         if d['label_key'][0].item() == 0:  # Possible for synthesis
-
             tmp = random.random()
             if tmp < self.sys_pro:  # Do synthesis
                 with train_lock:
@@ -364,16 +364,16 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             lung_mask = lung_mask.numpy()
 
         self.counter += 1
-        if self.counter == 5:  # update self.retp_candidate
+        if self.counter == 5:  # update affine every 5 images
             self.retp_candidate = self.rand_affine_crop(self.retp_temp)
             self.gg_candidate = self.rand_affine_crop(self.gg_temp)
 
-            if self.counter == 20:
+            if self.counter == 20:  # update pattern egg every 20 images
                 self.counter = 0
                 self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
                 self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
 
-        save_img: bool = False
+        save_img: bool = False  # If save the synthetic images and the intermediate images
         savefig(save_img, img, 'image_samples/0_ori_img_' + str(self.counter) + '.png')
         savefig(save_img, self.retp_candidate, 'image_samples/1_retp_candidate_' + str(self.counter) + '.png')
 

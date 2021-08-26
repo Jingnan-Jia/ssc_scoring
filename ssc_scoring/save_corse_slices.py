@@ -29,7 +29,7 @@ from ssc_scoring.mymodules.networks import med3d_resnet as med3d
 from ssc_scoring.mymodules.path import PathPos, PathPosInit
 
 from ssc_scoring.mymodules.set_args_pos import get_args
-from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_GPU_info, eval_net_mae, compute_metrics
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, eval_net_mae, compute_metrics
 import pandas as pd
 from monai.transforms import CastToTyped
 

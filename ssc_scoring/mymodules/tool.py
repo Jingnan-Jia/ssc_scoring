@@ -332,7 +332,7 @@ def record_mem_info():
     return int(memusage.strip())
 
 
-def record_GPU_info(outfile):
+def record_gpu_info(outfile):
     """
     Record GPU information to `outfile`.
 
@@ -343,7 +343,7 @@ def record_GPU_info(outfile):
 
     Example:
 
-    >>> record_GPU_info('slurm-98234.out')
+    >>> record_gpu_info('slurm-98234.out')
 
     """
     if outfile:
