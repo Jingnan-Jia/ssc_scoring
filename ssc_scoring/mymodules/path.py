@@ -54,8 +54,8 @@ class Path(PathInit, ABC):
     """
 
     def __init__(self, id: Union[int, str], model_dir: str, check_id_dir: bool = False):
-        super(PathInit, self).__init__()
-
+        super().__init__()
+        print(self.results_dir)
         self.slurmlog_dir = os.path.join(self.results_dir, 'slurmlogs')
         self.data_dir = 'dataset'
         self.ori_data_dir = os.path.join(self.data_dir, 'SSc_DeepLearning')
@@ -102,8 +102,8 @@ class PathPos(Path, PathPosInit):
     """
 
     def __init__(self, id=None, check_id_dir=False) -> None:
-        Path.__init__(self, id, 'models_pos', check_id_dir)
-        PathPosInit.__init__(self)
+        super(PathPos, self).__init__(id, 'models_pos', check_id_dir)
+        super(Path, self).__init__()
 
     def label(self, mode: str):
         return os.path.join(self.id_dir, mode + '_label.csv')
@@ -150,8 +150,8 @@ class PathScore(Path, PathScoreInit):
     """ Path values for Goh score prediction."""
 
     def __init__(self, id=None, check_id_dir=False) -> None:
-        Path.__init__(self, id, 'models', check_id_dir)
-        PathScoreInit.__init__(self)
+        super(PathScore, self).__init__(id, 'models_pos', check_id_dir)
+        super(Path, self).__init__()
 
     def label(self, mode: str):
         return os.path.join(self.id_dir, mode + '_label.csv')
