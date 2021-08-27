@@ -16,7 +16,7 @@ from torchvision.transforms import CenterCrop, RandomAffine
 import os
 import matplotlib.pyplot as plt
 from statistics import mean
-from monai.transforms import Transform, ScaleIntensityRange
+from monai.transforms import Transform, ScaleIntensityRange, MapTransform
 from monai.transforms import RandomizableTransform
 
 manager = Manager()
@@ -164,9 +164,9 @@ def gen_pts(nb_points: int, limit: int, radius: int) -> np.ndarray:
     return pts
 
 
-class SysthesisNewSampled(RandomizableTransform, Transform):
+class SysthesisNewSampled(RandomizableTransform, MapTransform):
     def __init__(self,
-                 keys,
+                 key,
                  retp_fpath,
                  gg_fpath,
                  mode,
@@ -180,7 +180,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         """Synthesis new image samples.
 
         Args:
-            keys: Always be 'image_key'
+            key: Always be 'image_key'
             retp_fpath: Full path for one retp seed
             gg_fpath: Full path for one gg seed
             mode: Chosed from 'train' or 'validaug'
@@ -192,8 +192,8 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             gg_increase: Voxel value increase for gg pattern, because gg part is always brighter
 
         """
-        super().__init__(keys)
         # self.sys_ratio = sys_ratio
+        self.key = key
         self.image_size = 512
         self.random_affine = RandomAffine(degrees=180, translate=(0.1, 0.1), scale=(1 - 0.5, 1 + 0.1))
         self.center_crop = CenterCrop(self.image_size)
@@ -290,10 +290,9 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
                 with train_lock:
                     sys_nb.value += 1
                     print("sys_nb: " + str(sys_nb.value))
-                for key in self.keys:
-                    d[key], d['label_key'] = self.systhesis(d[key], d['lung_mask_key'])
-                    # with train_lock:
-                    print("after synthesis, label is " + str(d['label_key']) + str("\n"))
+                d[self.key], d['label_key'] = self.systhesis(d[self.key], d['lung_mask_key'])
+                # with train_lock:
+                print("after synthesis, label is " + str(d['label_key']) + str("\n"))
             else:  # No synthesis, number of original images +1
                 with train_lock:
                     ori_nb.value += 1
@@ -363,13 +362,11 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         if type(lung_mask) == torch.Tensor:
             lung_mask = lung_mask.numpy()
 
-        self.counter += 1
-        if self.counter == 5:  # update affine every 5 images
+        if random.random() < 0.2:  # update affine every 5 images
             self.retp_candidate = self.rand_affine_crop(self.retp_temp)
             self.gg_candidate = self.rand_affine_crop(self.gg_temp)
 
-            if self.counter == 20:  # update pattern egg every 20 images
-                self.counter = 0
+            if random.random() < 0.02:  # update pattern egg every 50 images
                 self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
                 self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
 

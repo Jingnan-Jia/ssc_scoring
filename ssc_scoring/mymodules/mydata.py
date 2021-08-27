@@ -216,7 +216,7 @@ class LoadPos(LoaderInit):
         return data_dt
 
 
-class LoadScore(LoaderInit, Transform):
+class LoadScore(LoaderInit):
     """ LoadData for Goh score prediction."""
     def __init__(self, mypath, label_file, kfold_seed, args):
         super().__init__(resample_z=None, mypath=mypath, label_file=label_file, kfold_seed=kfold_seed,
@@ -231,9 +231,7 @@ class LoadScore(LoaderInit, Transform):
     def load_per_xy(self, dir_pat: str) -> Tuple[List, List]:
         """
         Load the data for the specific level.
-        :param df_excel:
         :param dir_pat:
-        :param level:
         :return:
         """
         x, y = [], []
@@ -323,7 +321,7 @@ class LoadScore(LoaderInit, Transform):
         return train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader
 
 
-class LoadPos2Score(LoaderInit, Transform):
+class LoadPos2Score(LoaderInit):
     """TODO: None"""
     def load_per_xy(self, dir_pat: str) -> Tuple[str, np.ndarray]:
         data_name = dir_pat

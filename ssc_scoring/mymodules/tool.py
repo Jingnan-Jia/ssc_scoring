@@ -8,6 +8,7 @@ import os
 import shutil
 import time
 from ssc_scoring.mymodules.path import PathInit, PathScoreInit, PathPosInit, PathPos
+import argparse
 
 import myutil.myutil as futil
 import numpy as np
@@ -70,7 +71,7 @@ def sampler_by_disext(tr_y, sys_ratio=0.8):
     return sampler
 
 
-def compute_metrics(mypath: PathInit, mypath2=None, log_dict=None):
+def compute_metrics(mypath: PathInit, mypath2: PathInit = None, log_dict: dict = None):
     """
 
     Args:
@@ -103,18 +104,33 @@ def compute_metrics(mypath: PathInit, mypath2=None, log_dict=None):
     return log_dict
 
 
-def get_mae_best(fpath):
+def get_mae_best(fpath: str):
+    """Get minimum mae.
+
+    Args:
+        fpath: A csv file in which the `mae` at each epoch is recorded
+
+    Returns:minimum mae
+
+    Use case:
+        :func:`ssc_scoring.mymodules.tool.eval_net_mae`.
     """
 
-    :param fpath:
-    :return:
-    """
     loss = pd.read_csv(fpath)
     mae = min(loss['mae'].to_list())
     return mae
 
 
-def eval_net_mae(mypath, mypath_src):
+def eval_net_mae(mypath: PathInit, mypath_src):
+    """Copy trained model and loss log to new directory and get its valid_mae_best.
+
+    Args:
+        mypath: Path instance
+        mypath_src: Path class to be instanced in the future
+
+    Returns:
+        valid_mae_minimum
+    """
     mypath2 = mypath_src
     shutil.copy(mypath2.model_fpath, mypath.model_fpath)  # make sure there is at least one model there
     for mo in ['train', 'validaug', 'valid', 'test']:
@@ -127,7 +143,22 @@ def eval_net_mae(mypath, mypath_src):
     return valid_mae_best
 
 
-def add_best_metrics(df: pd.DataFrame, mypath, mypath2, index: int, args) -> pd.DataFrame:
+def add_best_metrics(df: pd.DataFrame, mypath: PathInit, mypath2: PathInit, index: int) -> pd.DataFrame:
+    """Add best metrics: loss, mae (and mae_end5 if possible) to `df` in-place.
+
+    Args:
+        df: A DataFrame saving metrics (and other super-parameters)
+        mypath: Current Path instance
+        mypath2: Old Path instance, if the loss file can not be find in `mypath`, copy it from `mypath2`
+        index: Which row the metrics should be writen in `df`
+
+    Returns:
+        `df`
+
+    Use case:
+        :func:`ssc_scoring.mymodules.tool.record_2nd`
+
+    """
     modes = ['train', 'validaug', 'valid', 'test']
     if mypath.project_name == 'score':
         metrics_min = 'mae_end5'
@@ -160,7 +191,18 @@ def add_best_metrics(df: pd.DataFrame, mypath, mypath2, index: int, args) -> pd.
     return df
 
 
-def write_and_backup(df: pd.DataFrame, record_file: str, mypath):
+def write_and_backup(df: pd.DataFrame, record_file: str, mypath: PathInit) -> None:
+    """Write `df` to `record_file` and backup it to `mypath`.
+
+    Args:
+        df: A DataFrame saving metrics (and other super-parameters)
+        record_file: A file in hard disk saving df
+        mypath: Path instance
+
+    Returns:
+        None. Results are saved to disk.
+
+    """
     df.to_csv(record_file, index=False)
     shutil.copy(record_file, os.path.join(mypath.results_dir, 'cp_' + os.path.basename(record_file)))
     df_lastrow = df.iloc[[-1]]
@@ -168,6 +210,14 @@ def write_and_backup(df: pd.DataFrame, record_file: str, mypath):
 
 
 def fill_running(df: pd.DataFrame):
+    """Fill the old record of completed experiments if the state of them are still 'running'.
+
+    Args:
+        df: A DataFrame saving metrics (and other super-parameters)
+
+    Returns:
+        df itself
+    """
     for index, row in df.iterrows():
         if 'State' not in list(row.index) or row['State'] in [None, np.nan, 'RUNNING']:
             try:
@@ -187,6 +237,17 @@ def fill_running(df: pd.DataFrame):
 
 
 def correct_type(df: pd.DataFrame):
+    """Correct the type of values in `df`. to avoid the ID or other int valuables become float number.
+
+        Args:
+            df: A DataFrame saving metrics (and other super-parameters)
+
+        Returns:
+            df itself
+
+        Use ccase:
+            :func:`ssc_scoring.mymodules.tool.record_1st`
+        """
     for column in df:
         ori_type = type(df[column].to_list()[-1])  # find the type of the last valuable in this column
         if ori_type is int:
@@ -195,6 +256,18 @@ def correct_type(df: pd.DataFrame):
 
 
 def get_df_id(record_file: str):
+    """Get the current experiment ID. It equals to the latest experiment ID + 1.
+
+    Args:
+        record_file: A file to record experiments details (super-parameters and metrics).
+
+    Returns:
+        dataframe and new_id
+
+    Use ccase:
+            :func:`ssc_scoring.mymodules.tool.record_1st`
+
+    """
     if not os.path.isfile(record_file) or os.stat(record_file).st_size == 0:  # empty?
         new_id = 1
         df = pd.DataFrame()
@@ -205,13 +278,18 @@ def get_df_id(record_file: str):
     return df, new_id
 
 
-def record_1st(task, args):
+def record_1st(task: str, args: argparse.Namespace):
+    """First record in this experiment.
+
+    Args:
+        task: 'score' or 'pos' for score and position prediction respectively.
+        args: arguments.
+
+    Returns:
+        new_id
+
     """
-    First record in this experiment.
-    :param record_file: a file to store super parameters and metrics
-    :param args: arguments which need to be saved to record_file
-    :return: None
-    """
+
     if task=='score':
         record_file = PathScoreInit().record_file
         from ssc_scoring.mymodules.path import PathScore as Path
@@ -247,15 +325,19 @@ def record_1st(task, args):
     return new_id
 
 
-def record_2nd(task, current_id, log_dict, args):
+def record_2nd(task: str, current_id: int, log_dict: dict, args: argparse.Namespace):
+    """Second time to save logs.
+
+    Args:
+        task: 'score' or 'pos' for score and position prediction respectively.
+        current_id:
+        log_dict:
+        args:
+
+    Returns:
+
     """
-    Second time to save logs
-    :param record_file:
-    :param current_id:
-    :param log_dict: containing super parameters
-    :param args: used to get metrics
-    :return:
-    """
+
     if task=='score':
         record_file = PathScoreInit().record_file
         from ssc_scoring.mymodules.path import PathScore as Path
@@ -286,7 +368,7 @@ def record_2nd(task, current_id, log_dict, args):
         df.at[index, 'elapsed_time'] = elapsed_time
 
         mypath = Path(current_id)  # evaluate old model
-        df = add_best_metrics(df, mypath, Path(args.eval_id), index, args)
+        df = add_best_metrics(df, mypath, Path(args.eval_id), index)
 
         for key, value in log_dict.items():  # convert numpy to str before writing all log_dict to csv file
             if type(value) in [np.ndarray, list]:
@@ -311,7 +393,20 @@ def record_2nd(task, current_id, log_dict, args):
         write_and_backup(df, record_file, mypath)
 
 
-def time_diff(t1: datetime, t2: datetime):
+def time_diff(t1: datetime, t2: datetime) -> str:
+    """Time difference.
+
+    Args:
+        t1: time 1
+        t2: time 2
+
+    Returns:
+        elapsed time
+
+    Use case:
+        :func:`ssc_scoring.mymodules.tool.record_2nd`
+
+    """
     # t1_date = datetime.datetime(t1.year, t1.month, t1.day, t1.hour, t1.minute, t1.second)
     # t2_date = datetime.datetime(t2.year, t2.month, t2.day, t2.hour, t2.minute, t2.second)
     t_elapsed = t2 - t1
@@ -319,12 +414,34 @@ def time_diff(t1: datetime, t2: datetime):
     return str(t_elapsed).split('.')[0]  # drop out microseconds
 
 
-def _bytes_to_megabytes(value_bytes):
+def _bytes_to_megabytes(value_bytes: int):
+    """Convert bytes to megabytes.
+
+    Args:
+        value_bytes: bytes number
+
+    Returns:
+        megabytes
+
+    Use case:
+        :func:`ssc_scoring.mymodules.tool.record_gpu_info`
+
+    """
     return round((value_bytes / 1024) / 1024, 2)
 
 
 def record_mem_info():
-    ''' Memory usage in kB '''
+    """
+
+    Returns:
+        Memory usage in kB
+
+    .. warning::
+
+        This function is not tested. Please double check its code before using it.
+
+    """
+
     with open('/proc/self/status') as f:
         memusage = f.read().split('VmRSS:')[1].split('\n')[0][:-3]
     print('int(memusage.strip())')
@@ -333,19 +450,19 @@ def record_mem_info():
 
 
 def record_gpu_info(outfile):
-    """
-    Record GPU information to `outfile`.
+    """Record GPU information to `outfile`.
 
-    The format of `outfile` is: slurm-[JOB_ID].out
+    Args:
+        outfile: The format of `outfile` is: slurm-[JOB_ID].out
 
-    :param outfile:
-    :return:
-
+    Returns:
+        gpu_name, gpu_usage, gpu_util
     Example:
 
     >>> record_gpu_info('slurm-98234.out')
 
     """
+
     if outfile:
         jobid_gpuid = outfile.split('-')[-1]
         tmp_split = jobid_gpuid.split('_')[-1]

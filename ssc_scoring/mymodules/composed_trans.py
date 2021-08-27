@@ -12,7 +12,7 @@ from ssc_scoring.mymodules.mytrans import RandomAffined, RandomHorizontalFlipd, 
     RandGaussianNoised, LoadDatad, NormImgPosd, AddChanneld, RandomCropPosd, \
     CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd
 from ssc_scoring.mymodules.path import PathScore
-from monai.transforms import ScaleIntensityRange
+from monai.transforms import ScaleIntensityRanged
 
 
 def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace = None) -> monai.transforms.Compose:
@@ -33,9 +33,8 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
     One use case is :meth:`ssc_scoring.mymodules.mydata.LoadScore.xformd`.
 
     """
-    keys = "image_key"
+    key = "image_key"
     rotation = 90
-    image_size = 512
     vertflip = 0.5
     horiflip = 0.5
     shift = 10 / 512
@@ -44,7 +43,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
     xforms = []
     if mode in ['train', 'validaug']:
         if synthesis:
-            xforms.append(SysthesisNewSampled(keys=keys,
+            xforms.append(SysthesisNewSampled(key=key,
                                               retp_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/ret/ret.mha",
                                               gg_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/gg/gg.mha",
                                               mode=mode, sys_pro_in_0=args.sys_pro_in_0,
@@ -55,18 +54,18 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
                  gg_increase=args.gg_increase))
         xforms.extend([
             AddChanneld(),
-            RandomAffined(keys=keys, degrees=rotation, translate=(shift, shift), scale=(1 - scale, 1 + scale)),
+            RandomAffined(key=key, degrees=rotation, translate=(shift, shift), scale=(1 - scale, 1 + scale)),
             # CenterCropd(image_size),
-            RandomHorizontalFlipd(keys, p=horiflip),
-            RandomVerticalFlipd(keys, p=vertflip),
+            RandomHorizontalFlipd(key, p=horiflip),
+            RandomVerticalFlipd(key, p=vertflip),
             RandGaussianNoised()
         ])
     else:
         xforms.extend([AddChanneld()])
 
     # xforms.append(NormImgPosd())
-    xforms.append(ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
-    xforms.append(ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=-1500.0, b_max=1500.0, clip=True))
+    xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
+    # xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1500.0, b_max=1500.0, clip=True))
 
     transform = transforms.Compose(xforms)
 
@@ -116,10 +115,10 @@ def recon_transformd(mode: str = 'train'):
 
     """
 
-    keys = "image_key"  # only transform image
+    key = "image_key"  # only transform image
     xforms = [AddChanneld()]
     if mode == 'train':
-        xforms.extend([RandomHorizontalFlipd(keys), RandomVerticalFlipd(keys)])
+        xforms.extend([RandomHorizontalFlipd(key), RandomVerticalFlipd(key)])
     xforms.append(NormImgPosd())
     xforms = transforms.Compose(xforms)
     return xforms
@@ -187,7 +186,7 @@ def xformd_pos(mode: str = 'train', level_node: int = 0, train_on_level: int = 0
         xforms.append(NormImgPosd())
 
     xforms.extend([AddChanneld()])
-    # xforms.extend([CastToTyped(keys = ('image_key'), dtype=('np.float32'))])
+    # xforms.extend([CastToTyped(key = ('image_key'), dtype=('np.float32'))])
     transform = monai.transforms.Compose(xforms)
 
     return transform

@@ -2,18 +2,18 @@
 # @Time    : 7/5/21 4:01 PM
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
+import os
 import random
 from typing import Dict, Optional, Union, Hashable, Mapping, Sequence
-import pandas as pd
-import torch
+
 import myutil.myutil as futil
 import numpy as np
-from monai.transforms import Transform, ThreadUnsafe
-from monai.transforms import RandGaussianNoise, RandomizableTransform
-from monai.transforms import ScaleIntensityRange, RandGaussianNoise, MapTransform, AddChannel
+import pandas as pd
+import torch
+from monai.transforms import RandGaussianNoise, MapTransform
+from monai.transforms import RandomizableTransform
+from monai.transforms import Transform
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, CenterCrop, RandomAffine
-import matplotlib.pyplot as plt
-import os
 
 TransInOut = Mapping[Hashable, Optional[Union[np.ndarray, str]]]
 
@@ -75,7 +75,7 @@ class AddChanneld(Transform):
         return d
 
 
-class NormImgPosd(Transform):
+class NormImgPosd(MapTransform):
     """ Normalize image to standard Normalization distribution"""
 
     def __init__(self, key='image_key'):
@@ -131,7 +131,7 @@ def cropd(d: Dict, start: Sequence[int], z_size: int, y_size: int, x_size: int, 
     return d
 
 
-class CenterCropPosd(Transform):
+class CenterCropPosd(MapTransform):
     """ Crop image at the center point."""
 
     def __init__(self, z_size, y_size, x_size, key='image_key'):
@@ -192,7 +192,6 @@ class RandCropLevelRegiond(RandomizableTransform):
                  start: Optional[int] = None, key='image_key'):
         """
 
-        :param level: int
         :param rand_start: during training (rand_start=True), inference (rand_start=False).
         :param start: If rand_start is True, start would be ignored.
         """
@@ -264,7 +263,6 @@ class CropCorseRegiond(RandomizableTransform):
                  pred_world_fpath: Optional[str] = None):
         """
 
-        :param level: int
         :param rand_start: during training (rand_start=True), inference (rand_start=False).
         :param start: If rand_start is True, start would be ignored.
         """
@@ -441,50 +439,46 @@ class CropCorseRegiond(RandomizableTransform):
 
 
 class RandomAffined(RandomizableTransform):
-    def __init__(self, keys, *args, **kwargs):
-        super().__init__(keys)
+    def __init__(self, key, *args, **kwargs):
         self.random_affine = RandomAffine(*args, **kwargs)
+        self.key = key
 
     def __call__(self, data):
         d = dict(data)
-        for key in self.keys:
-            d[key] = self.random_affine(d[key])
+        d[self.key] = self.random_affine(d[self.key])
         return d
 
 
-class CenterCropd(Transform):
-    def __init__(self, keys, *args, **kargs):
-        super().__init__(keys)
+class CenterCropd(MapTransform):
+    def __init__(self, key, *args, **kargs):
         self.center_crop = CenterCrop(*args, **kargs)
+        self.key = 'image_key'
 
     def __call__(self, data):
         d = dict(data)
-        for key in self.keys:
-            d[key] = self.center_crop(d[key])
+        d[self.key] = self.center_crop(d[self.key])
         return d
 
 
 class RandomHorizontalFlipd(RandomizableTransform):
-    def __init__(self, keys, *args, **kargs):
-        super().__init__(keys)
+    def __init__(self, key, *args, **kargs):
         self.random_hflip = RandomHorizontalFlip(*args, **kargs)
+        self.key = key
 
     def __call__(self, data):
         d = dict(data)
-        for key in self.keys:
-            d[key] = self.random_hflip(d[key])
+        d[self.key] = self.random_hflip(d[self.key])
         return d
 
 
 class RandomVerticalFlipd(RandomizableTransform):
-    def __init__(self, keys, *args, **kargs):
-        super().__init__(keys)
+    def __init__(self, key, *args, **kargs):
+        self.key = key
         self.random_vflip = RandomVerticalFlip(*args, **kargs)
 
     def __call__(self, data):
         d = dict(data)
-        for key in self.keys:
-            d[key] = self.random_vflip(d[key])
+        d[self.key] = self.random_vflip(d[self.key])
         return d
 
 
@@ -503,15 +497,14 @@ class Clip:
         return img
 
 
-class Clipd(Transform):
-    def __init__(self, keys, min, max):
-        super().__init__(keys)
+class Clipd(MapTransform):
+    def __init__(self, min: int, max: int, key: str = 'image_key'):
         self.clip = Clip(min, max)
+        self.key  = key
 
     def __call__(self, data):
         d = dict(data)
-        for key in self.keys:
-            d[key] = self.clip(d[key])
+        d[self.key] = self.clip(d[self.key])
         return d
 
 
@@ -529,7 +522,7 @@ class CascadedSlices:
         return None
 
 
-class CoresPosd(Transform):
+class CoresPosd(MapTransform):
     def __init__(self, corse_fpath, data_fpath):
         self.corse_fpath = corse_fpath
         self.data_fpath = data_fpath
@@ -568,7 +561,7 @@ class CoresPosd(Transform):
         return data
 
 
-class SliceFromCorsePosd(Transform):
+class SliceFromCorsePosd(MapTransform):
     def __call__(self, d: dict):
         print('start slice from corse pos ...')
         img_3d = d['image_key']

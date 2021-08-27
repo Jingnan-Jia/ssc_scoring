@@ -22,7 +22,7 @@ matplotlib.use('Agg')
 from statistics import mean
 import threading
 from ssc_scoring.mymodules.set_args import get_args
-from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, compute_metrics, get_mae_best
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, compute_metrics, eval_net_mae
 from ssc_scoring.mymodules.path import PathScore as Path
 from ssc_scoring.mymodules.myloss import get_loss
 from ssc_scoring.mymodules.networks.cnn_fc2d import get_net, ReconNet
@@ -281,16 +281,8 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
             valid_mae_best = 10000
 
         elif args.mode in ["continue_train", "infer"]:  # Load old weights for continue_train or inference
-            shutil.copy(mypath2.model_fpath, mypath.model_fpath)  # copy old network weight to new directory
-            for mo in ['train', 'valid', 'test']:
-                shutil.copy(mypath2.loss(mo), mypath.loss(mo))  # copy old loss file to new directory
-            try:
-                shutil.copy(mypath2.loss('validaug'), mypath.loss('validaug'))
-            except:
-                pass
-            net.load_state_dict(torch.load(mypath.model_fpath, map_location=torch.device("cpu")))
-            valid_mae_best = get_mae_best(mypath2.loss('valid'))
-            print(f'load model from {mypath2.model_fpath}, valid_mae_best is {valid_mae_best}')
+            valid_mae_best = eval_net_mae(mypath, Path(args.eval_id))
+            net.load_state_dict(torch.load(mypath.model_fpath, map_location=device))  # model_fpath need to exist
         else:
             raise Exception("wrong mode: " + args.mode)
     else:
@@ -299,14 +291,14 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     epochs = args.epochs
 
     for i in range(epochs):  # loop epochs
-        start_run(args, 'train', net, train_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
+        start_run(args, 'train', net, train_dataloader, loss_fun, loss_fun_mae, opt, mypath, i)
 
         # run the validation & testing
         if (i % args.valid_period == 0) or (i > epochs * 0.9):  # validation period become 1 at the end
-            valid_mae_best = start_run(args, 'valid', net, valid_dataloader, device, loss_fun, loss_fun_mae, opt,
+            valid_mae_best = start_run(args, 'valid', net, valid_dataloader, loss_fun, loss_fun_mae, opt,
                                        mypath, i, valid_mae_best)
-            start_run(args, 'validaug', net, validaug_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
-            start_run(args, 'test', net, test_dataloader, device, loss_fun, loss_fun_mae, opt, mypath, i)
+            start_run(args, 'validaug', net, validaug_dataloader, loss_fun, loss_fun_mae, opt, mypath, i)
+            start_run(args, 'test', net, test_dataloader, loss_fun, loss_fun_mae, opt, mypath, i)
 
     data_loaders = {'train': train_dataloader,
                     'valid': valid_dataloader,

@@ -251,7 +251,7 @@ class Evaluater_score():
 def record_best_preds(net: torch.nn.Module, data_dict: Dict[str, DataLoader], mypath: PathInit, args):
     net.load_state_dict(torch.load(mypath.model_fpath))  # load the best weights to do evaluation
     for mode, data in data_dict.items():
-        dataloader = data['dl']
+        dataloader = data['dl'] if isinstance(data, dict) else data
         if mypath.project_name=='score':
             evaluater = Evaluater_score(net, dataloader, mode, mypath, args)
         else:
