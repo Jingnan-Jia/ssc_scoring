@@ -61,7 +61,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
             # CenterCropd(image_size),
             RandomHorizontalFlipd(key, p=horiflip),
             RandomVerticalFlipd(key, p=vertflip),
-            RandGaussianNoised()
+            # RandGaussianNoised()
         ])
     else:
         xforms.extend([AddChanneld()])

@@ -18,7 +18,7 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument('--mode', choices=('train', 'infer', 'continue_train', 'transfer_learning'),
                         help='mode', type=str, default='train')
-    parser.add_argument('--eval_id', help='id used for inference, or continue_train', default=0)
+    parser.add_argument('--eval_id', help='id used for inference, or continue_train', type=int, default=0)
     parser.add_argument('--train_recon', choices=(1, 0), help='if use ReconNet and its dataset', type=int, default=0)
 
     parser.add_argument('--net',
@@ -31,7 +31,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--r_c', choices=('r', 'c'), help='regression or classification?', type=str, default='r')
 
     parser.add_argument('--total_folds', choices=(4, 5), help='total folds', type=int, default=4)
-    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='fold number', type=int, default=4)
+    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='fold number', type=int, default=3)
 
     parser.add_argument('--level', choices=(1, 2, 3, 4, 5, 0), help='level of data, 0 denotes all', type=int, default=0)
     parser.add_argument('--corse_pred_id', help='if customer sampler?', default=None)  # 193_194_276_277
@@ -70,6 +70,7 @@ def get_args() -> argparse.Namespace:
 
     if (args.mode != 'train') and (args.eval_id == 0):
         parser.error("Please provide valid eval_id if the mode is: " + args.mode)
+
     if args.mode == "infer":
         args.epochs = 0
 

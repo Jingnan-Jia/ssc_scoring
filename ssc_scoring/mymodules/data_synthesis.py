@@ -364,12 +364,13 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             lung_mask = lung_mask.numpy()
 
         if random.random() < 0.2:  # update affine every 5 images
+
+            # if random.random() < 0.02:  # update pattern egg every 50 images
+            self.retp_temp = self._generate_candidate(self.ret_eggs_fpath)
+            self.gg_temp = self._generate_candidate(self.gg_eggs_fpath)
+
             self.retp_candidate = self._rand_affine_crop(self.retp_temp)
             self.gg_candidate = self._rand_affine_crop(self.gg_temp)
-
-            if random.random() < 0.02:  # update pattern egg every 50 images
-                self.retp_temp = self._generate_candidate(self.ret_eggs_fpath)
-                self.gg_temp = self._generate_candidate(self.gg_eggs_fpath)
 
         save_img: bool = False  # If save the synthetic images and the intermediate images
         savefig(save_img, img, 'image_samples/0_ori_img_' + str(self.counter) + '.png')
