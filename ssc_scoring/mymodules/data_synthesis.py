@@ -16,11 +16,11 @@ from torchvision.transforms import CenterCrop, RandomAffine
 import os
 import matplotlib.pyplot as plt
 from statistics import mean
-from monai.transforms import Transform, ScaleIntensityRange, MapTransform
+from monai.transforms import Transform, ScaleIntensityRange
 from monai.transforms import RandomizableTransform
 
 manager = Manager()
-# Store the numbers of each label during multi-process training/validaug as a monitor of balanced label distribution.
+# Store the numbers of each label during multi-process training/validaug as a monitor of _balanced label distribution.
 train_label_numbers = manager.dict(
     {label: key for label, key in zip(np.arange(0, 21) * 5, np.zeros((21,)).astype(np.int))})
 train_lock = Lock()
@@ -45,7 +45,7 @@ def savefig(save_flag: bool, img: np.ndarray, fpath: str) -> None:
     Returns:
         None. Image will be saved to disk.
 
-    Use case:
+    Examples:
         :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`
 
     """
@@ -74,7 +74,7 @@ def resort_pts_for_convex(pts_ls: list) -> list:
     Returns:
         A new list of points. Connecting the points in the new list can get a convex.
 
-    Use case:
+    Examples:
         :func:`ssc_scoring.mymodules.data_synthesis.gen_pts`
 
     """
@@ -131,7 +131,7 @@ def gen_pts(nb_points: int, limit: int, radius: int) -> np.ndarray:
     Returns:
         A list of points.
 
-    Use case:
+    Example:
         :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`
 
     """
@@ -164,7 +164,7 @@ def gen_pts(nb_points: int, limit: int, radius: int) -> np.ndarray:
     return pts
 
 
-class SysthesisNewSampled(RandomizableTransform, MapTransform):
+class SysthesisNewSampled(RandomizableTransform, Transform):
     def __init__(self,
                  key,
                  retp_fpath,
@@ -187,18 +187,19 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
             sys_pro_in_0: Probability to synthesis image when is is healthy
             retp_blur: Smooth width between retp pattern foreground and healthy background
             gg_blur: Smooth width between gg pattern foreground and healthy background
-            sampler: If using balanced sampler which leads to balanced label distribution
+            sampler: If using _balanced sampler which leads to _balanced label distribution
             gen_gg_as_retp: If generage gg pattern using the same method as it used by retp
             gg_increase: Voxel value increase for gg pattern, because gg part is always brighter
 
         """
         # self.sys_ratio = sys_ratio
+        super(RandomizableTransform, self).__init__()
         self.key = key
         self.image_size = 512
         self.random_affine = RandomAffine(degrees=180, translate=(0.1, 0.1), scale=(1 - 0.5, 1 + 0.1))
         self.center_crop = CenterCrop(self.image_size)
 
-        self.sys_pro = sys_pro_in_0 if sys_pro_in_0 else 20 / 21 # todo: explain it
+        self.sys_pro = sys_pro_in_0 if sys_pro_in_0 else 20 / 21  # todo: explain it
 
         self.mode = mode
         self.retp_fpath = retp_fpath  # retp will generated from its egg
@@ -212,11 +213,11 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
         self.ret_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
         self.gg_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
 
-        self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
-        self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
+        self.retp_temp = self._generate_candidate(self.ret_eggs_fpath)
+        self.gg_temp = self._generate_candidate(self.gg_eggs_fpath)
 
-        self.retp_candidate = self.rand_affine_crop(self.retp_temp)
-        self.gg_candidate = self.rand_affine_crop(self.gg_temp)
+        self.retp_candidate = self._rand_affine_crop(self.retp_temp)
+        self.gg_candidate = self._rand_affine_crop(self.gg_temp)
 
         self.counter = 0  # Count the number of training (or validaug) images
         self.synth_y = []  # Labels of synthetic images
@@ -227,7 +228,7 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
         else:
             raise Exception("mode is wrong for synthetic data", self.mode)
 
-    def generate_candidate(self, eggs_fpath):
+    def _generate_candidate(self, eggs_fpath):
         # ori_image_fpath = fpath.split('.mha')[0] + '_ori.mha'
         egg_fpath = random.choice(eggs_fpath)
         print(f'randomly select this egg: {egg_fpath}')
@@ -247,14 +248,14 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
         temp = np.vstack(([temp] * nb_row))
         return temp
 
-    def rand_affine_crop(self, retp_temp: np.ndarray):
+    def _rand_affine_crop(self, retp_temp: np.ndarray):
         retp_temp_tensor = torch.from_numpy(retp_temp[None])
         retp_affina = self.random_affine(retp_temp_tensor)
         retp_candidate = self.center_crop(retp_affina)
         retp_candidate = torch.squeeze(retp_candidate).numpy()
         return retp_candidate
 
-    def balanced(self, label):
+    def _balanced(self, label):
         category = label // 5 * 5
         average = mean(list(self.label_numbers.values()))
         min_account = min(list(self.label_numbers.values()))
@@ -268,7 +269,7 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
         else:
             return True
 
-    def account_label(self, label):
+    def _account_label(self, label):
         category = label // 5 * 5
         # with self.lock:
         if self.mode == "train":
@@ -290,7 +291,7 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
                 with train_lock:
                     sys_nb.value += 1
                     print("sys_nb: " + str(sys_nb.value))
-                d[self.key], d['label_key'] = self.systhesis(d[self.key], d['lung_mask_key'])
+                d[self.key], d['label_key'] = self._systhesis(d[self.key], d['lung_mask_key'])
                 # with train_lock:
                 print("after synthesis, label is " + str(d['label_key']) + str("\n"))
             else:  # No synthesis, number of original images +1
@@ -307,10 +308,10 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
             # with train_lock:
             print("No need for synthesis, label is " + str(d['label_key']) + str("\n"))
 
-        self.account_label(d['label_key'][0].item())
+        self._account_label(d['label_key'][0].item())
         return d
 
-    def random_mask(self, nb_ellipse: int = 3, type: str = "ellipse"):
+    def _random_mask(self, nb_ellipse: int = 3, type: str = "ellipse"):
         fig_: np.ndarray = np.zeros((self.image_size, self.image_size))
         # Blue color in BGR
         color = 1
@@ -357,26 +358,26 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
 
         return fig_
 
-    def systhesis(self, img: torch.Tensor, lung_mask: Union[np.ndarray, torch.Tensor]):
+    def _systhesis(self, img: torch.Tensor, lung_mask: Union[np.ndarray, torch.Tensor]):
         img = img.numpy()
         if type(lung_mask) == torch.Tensor:
             lung_mask = lung_mask.numpy()
 
         if random.random() < 0.2:  # update affine every 5 images
-            self.retp_candidate = self.rand_affine_crop(self.retp_temp)
-            self.gg_candidate = self.rand_affine_crop(self.gg_temp)
+            self.retp_candidate = self._rand_affine_crop(self.retp_temp)
+            self.gg_candidate = self._rand_affine_crop(self.gg_temp)
 
             if random.random() < 0.02:  # update pattern egg every 50 images
-                self.retp_temp = self.generate_candidate(self.ret_eggs_fpath)
-                self.gg_temp = self.generate_candidate(self.gg_eggs_fpath)
+                self.retp_temp = self._generate_candidate(self.ret_eggs_fpath)
+                self.gg_temp = self._generate_candidate(self.gg_eggs_fpath)
 
         save_img: bool = False  # If save the synthetic images and the intermediate images
         savefig(save_img, img, 'image_samples/0_ori_img_' + str(self.counter) + '.png')
         savefig(save_img, self.retp_candidate, 'image_samples/1_retp_candidate_' + str(self.counter) + '.png')
 
         while (1):
-            rand_retp_mask = self.random_mask(3, type="ellipse")
-            rand_gg_mask = self.random_mask(3, type="ellipse")
+            rand_retp_mask = self._random_mask(3, type="ellipse")
+            rand_gg_mask = self._random_mask(3, type="ellipse")
 
             savefig(save_img, rand_gg_mask, 'image_samples/2_rand_gg_mask_' + str(self.counter) + '.png')
             savefig(save_img, rand_retp_mask, 'image_samples/3_rand_retp_mask_' + str(self.counter) + '.png')
@@ -445,10 +446,10 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
             print("new y: ", y)
 
             if self.sampler:
-                if self.balanced(y_disext):
+                if self._balanced(y_disext):
                     break
                 else:
-                    print("not balanced, re generate image")
+                    print("not _balanced, re generate image")
             else:
                 break
 
@@ -479,7 +480,8 @@ class SysthesisNewSampled(RandomizableTransform, MapTransform):
                         intersection_mask * img_wt_retp)  # gg + retp
                 final = img_wt_retp_gg * (1 - intersection_mask) + merge
                 y_name = '_'.join([str(y[0]), str(y[1]), str(y[2])])
-                savefig(save_img, final, 'image_samples/15_img_wt_retp_gg_final_' + str(self.counter)+ '_'+ y_name + '.png')
+                savefig(save_img, final,
+                        'image_samples/15_img_wt_retp_gg_final_' + str(self.counter) + '_' + y_name + '.png')
 
                 # retp part
 

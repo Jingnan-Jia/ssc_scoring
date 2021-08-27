@@ -32,38 +32,12 @@ def metrics(pred_fpath: str, label_fpath: str, bland_in_1: bool, adap_markersize
     df_label = pd.read_csv(label_fpath)
     df_pred = pd.read_csv(pred_fpath)
 
-    for df in [df_label, df_pred]:
-        if df.columns[0] == "ID":
-            del df["ID"]
-            del df["Level"]
-
-    if df_label.columns[0] not in ['L1_pos', 'L1', 'disext']:
-        df_label = pd.read_csv(label_fpath, header=None)
-        if len(df_label.columns) == 5:
-            columns = ['L1', 'L2', 'L3', 'L4', 'L5']
-        elif len(df_label.columns) == 3:
-            columns = ['disext', 'gg', 'retp']
-        else:
-            columns = ['unknown']
-        df_label.columns = columns
-
-    if df_pred.columns[0] not in ['L1_pos', 'L1', 'disext']:
-        df_pred = pd.read_csv(pred_fpath, header=None)
-        if len(df_pred.columns) == 5:
-            columns = ['L1', 'L2', 'L3', 'L4', 'L5']
-        elif len(df_pred.columns) == 3:
-            columns = ['disext', 'gg', 'retp']
-        else:
-            columns = ['unknown']
-        df_pred.columns = columns
-
     label_np = df_label.to_numpy()
     pred_np = df_pred.to_numpy()
     diff = pred_np - label_np
     if bland_in_1:
         mean = np.mean(diff)
         std = np.std(diff)
-
         bland_in_1_mean_std = {"mean": mean, "std": std}
     else:
         bland_in_1_mean_std = None

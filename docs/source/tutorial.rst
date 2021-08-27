@@ -284,7 +284,7 @@ The following arguments are from :mod:`ssc_scoring.mymodules.set_args`
 
 #. `--sampler`
 
-    If use balanced sampler to make the label distribution balanced.
+    If use _balanced sampler to make the label distribution _balanced.
 
     .. code-block:: bash
 

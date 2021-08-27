@@ -4,22 +4,21 @@
 # @Email   : jiajingnan2222@gmail.com
 import os
 import random
-from typing import Dict, Optional, Union, Hashable, Mapping, Sequence
+from typing import Dict, Optional, Union, Hashable, Sequence
 
 import myutil.myutil as futil
 import numpy as np
 import pandas as pd
 import torch
-from monai.transforms import RandGaussianNoise, MapTransform
-from monai.transforms import RandomizableTransform
-from monai.transforms import Transform
+from monai.transforms import RandGaussianNoise, Transform, RandomizableTransform
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, CenterCrop, RandomAffine
 
-TransInOut = Mapping[Hashable, Optional[Union[np.ndarray, str]]]
+TransInOut = Dict[Hashable, Optional[Union[np.ndarray, torch.Tensor, str, int]]]
+# Note: all transforms here must inheritage Transform, Transform, or RandomTransform.
 
 
 class LoadDatad(Transform):
-    """ Load data.
+    """Load data. The output image values range from -1500 to 1500.
 
         #. Load data from `data['fpath_key']`;
         #. truncate data image to [-1500, 1500];
@@ -27,9 +26,13 @@ class LoadDatad(Transform):
         #. Calculate relative slice number;
         #. Build a data dict.
 
+    Examples:
+        :func:`ssc_scoring.mymodules.composed_trans.xformd_pos2score` and
+        :func:`ssc_scoring.mymodules.composed_trans.xformd_pos`
+
     """
 
-    def __call__(self, data: Mapping[str, Union[np.ndarray, str]]) -> Dict[str, np.ndarray]:
+    def __call__(self, data: TransInOut) -> TransInOut:
         fpath = data['fpath_key']
         world_pos = np.array(data['world_key']).astype(np.float32)
         data_x = futil.load_itk(fpath, require_ori_sp=True)
@@ -61,28 +64,22 @@ class LoadDatad(Transform):
 
 
 class AddChanneld(Transform):
-    """ Add a channel to the first dimension."""
-
+    """Add a channel to the first dimension."""
     def __init__(self, key='image_key'):
         self.key = key
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
-        """
-        Apply the transform to `img`.
-        """
-        d = dict(data)
-        d[self.key] = d[self.key][None]
-        return d
+    def __call__(self, data: TransInOut) -> TransInOut:
+        data[self.key] = data[self.key][None]
+        return data
 
 
-class NormImgPosd(MapTransform):
-    """ Normalize image to standard Normalization distribution"""
-
+class NormImgPosd(Transform):
+    """Normalize image to standard Normalization distribution"""
     def __init__(self, key='image_key'):
         self.key = key
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
-        d = dict(data)
+    def __call__(self, data: TransInOut) -> TransInOut:
+        d = data
 
         if isinstance(d[self.key], torch.Tensor):
             mean, std = torch.mean(d[self.key]), torch.std(d[self.key])
@@ -104,13 +101,13 @@ class RandGaussianNoised(RandomizableTransform):
         self.noise = RandGaussianNoise(**kargs)
         self.key = key
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
+    def __call__(self, data: TransInOut) -> TransInOut:
         d = dict(data)
         d[self.key] = self.noise(d[self.key])
         return d
 
 
-def cropd(d: Dict, start: Sequence[int], z_size: int, y_size: int, x_size: int, key: str = 'image_key') -> Dict:
+def cropd(d: TransInOut, start: Sequence[int], z_size: int, y_size: int, x_size: int, key: str = 'image_key') -> TransInOut:
     """ Crop 3D image
 
     :param d: data dict, including an 3D image
@@ -131,20 +128,20 @@ def cropd(d: Dict, start: Sequence[int], z_size: int, y_size: int, x_size: int, 
     return d
 
 
-class CenterCropPosd(MapTransform):
+class CenterCropPosd(RandomizableTransform):
     """ Crop image at the center point."""
-
     def __init__(self, z_size, y_size, x_size, key='image_key'):
+        super().__init__()
         self.x_size = x_size
         self.y_size = y_size
         self.z_size = z_size
         self.key = key
+        super().__init__()
 
     def __call__(self, data: TransInOut) -> TransInOut:
-        d = dict(data)
-        keys = set(d.keys())
-        assert {self.keys, 'label_in_img_key', 'label_in_patch_key'}.issubset(keys)
-        img_shape = d[self.keys].shape
+        keys = set(data.keys())
+        assert {self.key, 'label_in_img_key', 'label_in_patch_key'}.issubset(keys)
+        img_shape = data[self.key].shape
         # print(f'img_shape: {img_shape}')
         assert img_shape[0] >= self.z_size
         assert img_shape[1] >= self.y_size
@@ -152,22 +149,23 @@ class CenterCropPosd(MapTransform):
         middle_point = [shape // 2 for shape in img_shape]
         start = [middle_point[0] - self.z_size // 2, middle_point[1] - self.y_size // 2,
                  middle_point[2] - self.y_size // 2]
-        d = cropd(d, start, self.z_size, self.y_size, self.x_size)
+        data = cropd(data, start, self.z_size, self.y_size, self.x_size)
 
-        return d
+        return data
 
 
 class RandomCropPosd(RandomizableTransform):
     """ Random crop a patch from a 3D image, and update the labels"""
 
     def __init__(self, z_size, y_size, x_size, key='image_key'):
+        super().__init__()
         self.x_size = x_size
         self.y_size = y_size
         self.z_size = z_size
         self.key = key
         super().__init__()
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
+    def __call__(self, data: TransInOut) -> TransInOut:
         d = dict(data)
         # if 'image_key' in data:
         img_shape = d[self.key].shape  # shape order: z,y x
@@ -203,12 +201,11 @@ class RandCropLevelRegiond(RandomizableTransform):
         self.key = key
         super().__init__()
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Mapping[Hashable, np.ndarray]:
-        d = dict(data)
+    def __call__(self, data: TransInOut) -> TransInOut:
+        d = data
 
         if self.height > d[self.key].shape[0]:
-            raise Exception(
-                f"desired height {self.height} is greater than image size along z {d['image_key'].shape[0]}")
+            raise Exception(f"desired height {self.height} is greater than image size_z {d['image_key'].shape[0]}")
 
         if self.train_on_level != 0:
             self.level = self.train_on_level  # only input data from this level
@@ -266,6 +263,7 @@ class CropCorseRegiond(RandomizableTransform):
         :param rand_start: during training (rand_start=True), inference (rand_start=False).
         :param start: If rand_start is True, start would be ignored.
         """
+        super().__init__()
         self.level_node = level_node
         self.train_on_level = train_on_level
         self.height = height
@@ -301,7 +299,7 @@ class CropCorseRegiond(RandomizableTransform):
         d['corse_pred_in_img_key'] = corse_pred
         return d
 
-    def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Mapping[Hashable, np.ndarray]:
+    def __call__(self, data: TransInOut) -> TransInOut:
         d = dict(data)
         d = self.update_label(d)
         if self.height > d['image_key'].shape[0]:
@@ -393,7 +391,7 @@ class CropCorseRegiond(RandomizableTransform):
 #         return patch
 #
 #
-#     def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Mapping[Hashable, np.ndarray]:
+#     def __call__(self, data: TransInOut) -> TransInOut:
 #         d = dict(data)  # get data
 #         corse_pred: int = self.corse_pred(d['fpath_key'])  # get corse predictions for this data
 #         corse_pred = corse_pred[self.level - 1]
@@ -423,7 +421,7 @@ class CropCorseRegiond(RandomizableTransform):
 #     def __init__(self, transforms):
 #         self.transforms = transforms
 #
-#     def __call__(self, data: Mapping[Hashable, np.ndarray]) -> Dict[Hashable, np.ndarray]:
+#     def __call__(self, data: TransInOut) -> TransInOut:
 #         for t in self.transforms:
 #             data = t(data)
 #         return data
@@ -442,6 +440,7 @@ class RandomAffined(RandomizableTransform):
     def __init__(self, key, *args, **kwargs):
         self.random_affine = RandomAffine(*args, **kwargs)
         self.key = key
+        super().__init__()
 
     def __call__(self, data):
         d = dict(data)
@@ -449,7 +448,7 @@ class RandomAffined(RandomizableTransform):
         return d
 
 
-class CenterCropd(MapTransform):
+class CenterCropd(Transform):
     def __init__(self, key, *args, **kargs):
         self.center_crop = CenterCrop(*args, **kargs)
         self.key = 'image_key'
@@ -464,6 +463,7 @@ class RandomHorizontalFlipd(RandomizableTransform):
     def __init__(self, key, *args, **kargs):
         self.random_hflip = RandomHorizontalFlip(*args, **kargs)
         self.key = key
+        super().__init__()
 
     def __call__(self, data):
         d = dict(data)
@@ -475,6 +475,7 @@ class RandomVerticalFlipd(RandomizableTransform):
     def __init__(self, key, *args, **kargs):
         self.key = key
         self.random_vflip = RandomVerticalFlip(*args, **kargs)
+        super().__init__()
 
     def __call__(self, data):
         d = dict(data)
@@ -497,7 +498,7 @@ class Clip:
         return img
 
 
-class Clipd(MapTransform):
+class Clipd(Transform):
     def __init__(self, min: int, max: int, key: str = 'image_key'):
         self.clip = Clip(min, max)
         self.key  = key
@@ -522,7 +523,7 @@ class CascadedSlices:
         return None
 
 
-class CoresPosd(MapTransform):
+class CoresPosd(Transform):
     def __init__(self, corse_fpath, data_fpath):
         self.corse_fpath = corse_fpath
         self.data_fpath = data_fpath
@@ -561,7 +562,7 @@ class CoresPosd(MapTransform):
         return data
 
 
-class SliceFromCorsePosd(MapTransform):
+class SliceFromCorsePosd(Transform):
     def __call__(self, d: dict):
         print('start slice from corse pos ...')
         img_3d = d['image_key']

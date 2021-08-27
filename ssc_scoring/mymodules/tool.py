@@ -2,34 +2,40 @@
 # @Time    : 7/5/21 5:23 PM
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
-import torch
+import argparse
 import datetime
 import os
 import shutil
 import time
-from ssc_scoring.mymodules.path import PathInit, PathScoreInit, PathPosInit, PathPos
-import argparse
+from typing import Union, Tuple
 
 import myutil.myutil as futil
 import numpy as np
 import nvidia_smi
 import pandas as pd
+import torch
 from filelock import FileLock
-
-from ssc_scoring.mymodules.confusion_test import confusion
-# from ssc_scoring.mymodules.path import PathPos as Path
-# from mymodules.set_args_pos import args
 from torch.utils.data import WeightedRandomSampler
 
-def sampler_by_disext(tr_y, sys_ratio=0.8):
+from ssc_scoring.mymodules.confusion_test import confusion
+from ssc_scoring.mymodules.path import PathScoreInit, PathPosInit, PathScore, PathPos
+
+
+def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
     """Balanced sampler according to score distribution of disext.
 
     Args:
-        tr_y:
+        tr_y: Training labels.
+            - Three scores per image: [[score1_disext, score1_gg, score1_ret], [score2_disext, score2_gg, score3_ret],
+             ...]
+            - One score per image: [score1_disext, score2_disext, ...]
         sys_ratio:
 
     Returns:
+        WeightedRandomSampler
 
+    Examples:
+        :func:`ssc_scoring.mymodules.mydata.LoadScore.load`
     """
     disext_list = []
     for sample in tr_y:
@@ -45,8 +51,8 @@ def sampler_by_disext(tr_y, sys_ratio=0.8):
     if sys_ratio:
         weight = 1 / class_sample_count
         print("class_sample_count", class_sample_count)
-        print("unique_disext",disext_unique_list )
-        print("original weight",weight )
+        print("unique_disext", disext_unique_list)
+        print("original weight", weight)
 
         idx_0 = disext_unique_list.index(0)
         weight[idx_0] += 20 * weight[idx_0]
@@ -71,15 +77,21 @@ def sampler_by_disext(tr_y, sys_ratio=0.8):
     return sampler
 
 
-def compute_metrics(mypath: PathInit, mypath2: PathInit = None, log_dict: dict = None):
-    """
+def compute_metrics(mypath: Union[PathScore, PathPos],
+                    mypath2: Union[PathScore, PathPos] = None,
+                    log_dict: dict = None) -> dict:
+    """Compute metrics and record them to log_dict.
 
     Args:
-        mypath:
-        mypath2:
-        log_dict:
+        mypath: Current experiment Path instance
+        mypath2: Trained experiment Path instance, if mypath is empty, copy files from mypath2 to mypath
+        log_dict: A dict to record all metrics
 
     Returns:
+        log_dict
+
+    Examples:
+        :func:`ssc_scoring.run.train` and :func:`ssc_scoring.run_pos.train`
 
     """
     for mode in ['train', 'valid', 'test', 'validaug']:
@@ -104,16 +116,18 @@ def compute_metrics(mypath: PathInit, mypath2: PathInit = None, log_dict: dict =
     return log_dict
 
 
-def get_mae_best(fpath: str):
+def get_mae_best(fpath: str) -> float:
     """Get minimum mae.
 
     Args:
         fpath: A csv file in which the `mae` at each epoch is recorded
 
-    Returns:minimum mae
+    Returns:
+        Minimum mae
 
-    Use case:
-        :func:`ssc_scoring.mymodules.tool.eval_net_mae`.
+    Examples:
+        :func:`ssc_scoring.mymodules.tool.eval_net_mae`
+
     """
 
     loss = pd.read_csv(fpath)
@@ -121,17 +135,20 @@ def get_mae_best(fpath: str):
     return mae
 
 
-def eval_net_mae(mypath: PathInit, mypath_src):
+def eval_net_mae(mypath: Union[PathScore, PathPos], mypath2: Union[PathScore, PathPos]) -> float:
     """Copy trained model and loss log to new directory and get its valid_mae_best.
 
     Args:
-        mypath: Path instance
-        mypath_src: Path class to be instanced in the future
+        mypath: Current experiment Path instance
+        mypath2: Trained experiment Path instance, if mypath is empty, copy files from mypath2 to mypath
 
     Returns:
         valid_mae_minimum
+
+    Examples:
+        :func:`ssc_scoring.run.train` and :func:`ssc_scoring.run_pos.train`
+
     """
-    mypath2 = mypath_src
     shutil.copy(mypath2.model_fpath, mypath.model_fpath)  # make sure there is at least one model there
     for mo in ['train', 'validaug', 'valid', 'test']:
         try:
@@ -143,7 +160,10 @@ def eval_net_mae(mypath: PathInit, mypath_src):
     return valid_mae_best
 
 
-def add_best_metrics(df: pd.DataFrame, mypath: PathInit, mypath2: PathInit, index: int) -> pd.DataFrame:
+def add_best_metrics(df: pd.DataFrame,
+                     mypath: Union[PathScore, PathPos],
+                     mypath2: Union[PathScore, PathPos],
+                     index: int) -> pd.DataFrame:
     """Add best metrics: loss, mae (and mae_end5 if possible) to `df` in-place.
 
     Args:
@@ -155,7 +175,7 @@ def add_best_metrics(df: pd.DataFrame, mypath: PathInit, mypath2: PathInit, inde
     Returns:
         `df`
 
-    Use case:
+    Examples:
         :func:`ssc_scoring.mymodules.tool.record_2nd`
 
     """
@@ -191,7 +211,7 @@ def add_best_metrics(df: pd.DataFrame, mypath: PathInit, mypath2: PathInit, inde
     return df
 
 
-def write_and_backup(df: pd.DataFrame, record_file: str, mypath: PathInit) -> None:
+def write_and_backup(df: pd.DataFrame, record_file: str, mypath: Union[PathScore, PathPos]) -> None:
     """Write `df` to `record_file` and backup it to `mypath`.
 
     Args:
@@ -202,14 +222,18 @@ def write_and_backup(df: pd.DataFrame, record_file: str, mypath: PathInit) -> No
     Returns:
         None. Results are saved to disk.
 
+    Examples:
+        :func:`ssc_scoring.mymodules.tool.record_1st` and :func:`ssc_scoring.mymodules.tool.record_2nd`
+
     """
     df.to_csv(record_file, index=False)
     shutil.copy(record_file, os.path.join(mypath.results_dir, 'cp_' + os.path.basename(record_file)))
     df_lastrow = df.iloc[[-1]]
-    df_lastrow.to_csv(os.path.join(mypath.id_dir, os.path.basename(record_file)), index=False)  # save the record of the current ex
+    df_lastrow.to_csv(os.path.join(mypath.id_dir, os.path.basename(record_file)),
+                      index=False)  # save the record of the current ex
 
 
-def fill_running(df: pd.DataFrame):
+def fill_running(df: pd.DataFrame) -> pd.DataFrame:
     """Fill the old record of completed experiments if the state of them are still 'running'.
 
     Args:
@@ -217,6 +241,10 @@ def fill_running(df: pd.DataFrame):
 
     Returns:
         df itself
+
+    Examples:
+        :func:`ssc_scoring.mymodules.tool.record_1st`
+
     """
     for index, row in df.iterrows():
         if 'State' not in list(row.index) or row['State'] in [None, np.nan, 'RUNNING']:
@@ -236,7 +264,7 @@ def fill_running(df: pd.DataFrame):
     return df
 
 
-def correct_type(df: pd.DataFrame):
+def correct_type(df: pd.DataFrame) -> pd.DataFrame:
     """Correct the type of values in `df`. to avoid the ID or other int valuables become float number.
 
         Args:
@@ -245,8 +273,9 @@ def correct_type(df: pd.DataFrame):
         Returns:
             df itself
 
-        Use ccase:
+        Examples:
             :func:`ssc_scoring.mymodules.tool.record_1st`
+
         """
     for column in df:
         ori_type = type(df[column].to_list()[-1])  # find the type of the last valuable in this column
@@ -255,7 +284,7 @@ def correct_type(df: pd.DataFrame):
     return df
 
 
-def get_df_id(record_file: str):
+def get_df_id(record_file: str) -> Tuple[pd.DataFrame, int]:
     """Get the current experiment ID. It equals to the latest experiment ID + 1.
 
     Args:
@@ -264,8 +293,8 @@ def get_df_id(record_file: str):
     Returns:
         dataframe and new_id
 
-    Use ccase:
-            :func:`ssc_scoring.mymodules.tool.record_1st`
+    Examples:
+        :func:`ssc_scoring.mymodules.tool.record_1st`
 
     """
     if not os.path.isfile(record_file) or os.stat(record_file).st_size == 0:  # empty?
@@ -278,7 +307,7 @@ def get_df_id(record_file: str):
     return df, new_id
 
 
-def record_1st(task: str, args: argparse.Namespace):
+def record_1st(task: str, args: argparse.Namespace) -> int:
     """First record in this experiment.
 
     Args:
@@ -288,9 +317,12 @@ def record_1st(task: str, args: argparse.Namespace):
     Returns:
         new_id
 
+    Examples:
+        :func:`ssc_scoring.run` and :func:`ssc_scoring.run_pos`
+
     """
 
-    if task=='score':
+    if task == 'score':
         record_file = PathScoreInit().record_file
         from ssc_scoring.mymodules.path import PathScore as Path
     else:
@@ -299,9 +331,9 @@ def record_1st(task: str, args: argparse.Namespace):
 
     lock = FileLock(record_file + ".lock")  # lock the file, avoid other processes write other things
     with lock:  # with this lock,  open a file for exclusive access
-        with open(record_file, 'a') as csv_file:
+        with open(record_file, 'a'):
             df, new_id = get_df_id(record_file)
-            if args.mode=='train':
+            if args.mode == 'train':
                 mypath = Path(new_id, check_id_dir=True)  # to check if id_dir already exist
             else:
                 mypath = Path(new_id, check_id_dir=True)
@@ -325,20 +357,24 @@ def record_1st(task: str, args: argparse.Namespace):
     return new_id
 
 
-def record_2nd(task: str, current_id: int, log_dict: dict, args: argparse.Namespace):
+def record_2nd(task: str, current_id: int, log_dict: dict, args: argparse.Namespace) -> None:
     """Second time to save logs.
 
     Args:
         task: 'score' or 'pos' for score and position prediction respectively.
-        current_id:
-        log_dict:
-        args:
+        current_id: Current experiment ID
+        log_dict: dict to save super-parameters and metrics
+        args: arguments
 
     Returns:
+        None. log_dict saved to disk.
+
+    Examples:
+        :func:`ssc_scoring.run` and :func:`ssc_scoring.run_pos`
 
     """
 
-    if task=='score':
+    if task == 'score':
         record_file = PathScoreInit().record_file
         from ssc_scoring.mymodules.path import PathScore as Path
     else:
@@ -401,9 +437,9 @@ def time_diff(t1: datetime, t2: datetime) -> str:
         t2: time 2
 
     Returns:
-        elapsed time
+        Elapsed time
 
-    Use case:
+    Examples:
         :func:`ssc_scoring.mymodules.tool.record_2nd`
 
     """
@@ -414,7 +450,7 @@ def time_diff(t1: datetime, t2: datetime) -> str:
     return str(t_elapsed).split('.')[0]  # drop out microseconds
 
 
-def _bytes_to_megabytes(value_bytes: int):
+def _bytes_to_megabytes(value_bytes: int) -> float:
     """Convert bytes to megabytes.
 
     Args:
@@ -423,14 +459,14 @@ def _bytes_to_megabytes(value_bytes: int):
     Returns:
         megabytes
 
-    Use case:
+    Examples:
         :func:`ssc_scoring.mymodules.tool.record_gpu_info`
 
     """
     return round((value_bytes / 1024) / 1024, 2)
 
 
-def record_mem_info():
+def record_mem_info() -> int:
     """
 
     Returns:
@@ -449,7 +485,7 @@ def record_mem_info():
     return int(memusage.strip())
 
 
-def record_gpu_info(outfile):
+def record_gpu_info(outfile) -> Tuple:
     """Record GPU information to `outfile`.
 
     Args:
@@ -457,9 +493,14 @@ def record_gpu_info(outfile):
 
     Returns:
         gpu_name, gpu_usage, gpu_util
-    Example:
 
-    >>> record_gpu_info('slurm-98234.out')
+    Examples:
+
+        >>> record_gpu_info('slurm-98234.out')
+
+        or
+
+        :func:`ssc_scoring.run.gpu_info` and :func:`ssc_scoring.run_pos.gpu_info`
 
     """
 
@@ -489,4 +530,3 @@ def record_gpu_info(outfile):
     else:
         print('outfile is None, can not show GPU memory info')
         return None, None, None
-

@@ -21,8 +21,13 @@ from ssc_scoring.mymodules.tool import sampler_by_disext
 
 
 class LoaderInit(ABC):
-    """
-    Base class for LoadScore and LoadPos. methods of load_per_xy(), xformd() and load() need to be implemented.
+    """Abstract class for `LoadScore`, `LoadPos` and `LoadPos2Score`. Methods of and `load`, `xformd` and `load_per_xy`,
+    need to be implemented for the three class. The reason is:
+
+    #. `load` method need to use different `Dataset`.
+    #. `xformd` needs to use different `Transforms`.
+    #. `load_per_xy` need to use different images (2D or 3D) and labels (scores or positions).
+
     """
     def __init__(self, resample_z, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, level_node,
                  train_on_level, z_size, y_size, x_size, batch_size, workers):

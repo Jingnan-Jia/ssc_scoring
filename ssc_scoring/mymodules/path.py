@@ -7,11 +7,11 @@ import os
 from typing import Union
 from abc import ABC, abstractmethod
 
-__all__ = ["PathPos", "PathScore"]
 
 class PathInit(ABC):
     """ Set the directory for results. Leave the project name and record file as not implemented.
      Different sub-Path need to implement the 2 values"""
+
     def __init__(self):
         self.results_dir: str = 'results'
         self.project_name = self._project_name()
@@ -48,12 +48,13 @@ class PathPosInit(PathInit):
         return 'records_pos.csv'
 
 
-class Path(PathInit):
+class Path(PathInit, ABC):
     """
     Common path values are initialized.
     """
-    def __init__(self, id: Union[int, str], model_dir: str, check_id_dir: bool=False):
-        super().__init__()
+
+    def __init__(self, id: Union[int, str], model_dir: str, check_id_dir: bool = False):
+        super(PathInit, self).__init__()
 
         self.slurmlog_dir = os.path.join(self.results_dir, 'slurmlogs')
         self.data_dir = 'dataset'
@@ -70,23 +71,27 @@ class Path(PathInit):
             if os.path.isdir(self.id_dir):  # the dir for this id already exist
                 raise Exception('The same id_dir already exists', self.id_dir)
 
-        for dir in [self.slurmlog_dir, self.model_dir, self.data_dir, self.id_dir]:
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
-                print('successfully create directory:', dir)
+        for directory in [self.slurmlog_dir, self.model_dir, self.data_dir, self.id_dir]:
+            if not os.path.isdir(directory):
+                os.makedirs(directory)
+                print('successfully create directory:', directory)
 
         self.model_fpath = os.path.join(self.id_dir, 'model.pt')
         self.model_wt_structure_fpath = os.path.join(self.id_dir, 'model_wt_structure.pt')
 
+    @abstractmethod
     def label(self, mode):
         raise NotImplementedError
 
+    @abstractmethod
     def pred(self, mode):
         raise NotImplementedError
 
+    @abstractmethod
     def loss(self, mode):
         raise NotImplementedError
 
+    @abstractmethod
     def data(self, mode):
         raise NotImplementedError
 
@@ -95,6 +100,7 @@ class PathPos(Path, PathPosInit):
     """ Path values for position prediction.
 
     """
+
     def __init__(self, id=None, check_id_dir=False) -> None:
         Path.__init__(self, id, 'models_pos', check_id_dir)
         PathPosInit.__init__(self)
@@ -142,6 +148,7 @@ class PathPos(Path, PathPosInit):
 
 class PathScore(Path, PathScoreInit):
     """ Path values for Goh score prediction."""
+
     def __init__(self, id=None, check_id_dir=False) -> None:
         Path.__init__(self, id, 'models', check_id_dir)
         PathScoreInit.__init__(self)

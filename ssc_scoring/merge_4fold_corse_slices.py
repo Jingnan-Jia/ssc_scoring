@@ -17,8 +17,8 @@ def merge_corse_slices(ex_ls) -> None:
 
     Example:
 
-    >>> ex_ls = [193, 194, 276, 277]
-    >>> merge_corse_slices(ex_ls)
+        >>> ex_ls = [193, 194, 276, 277]
+        >>> merge_corse_slices(ex_ls)
 
     """
     all_dir = '/data/jjia/ssc_scoring/ssc_scoring/results/models_pos/' + '_'.join([str(i) for i in ex_ls]) + '/predicted_slices'

@@ -26,9 +26,9 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
 
     Examples:
 
-    >>> run_pos = True
-    >>> ex_ls = [193, 194, 276, 277]
-    >>> main(run_pos, ex_ls)
+        >>> run_pos = True
+        >>> ex_ls = [193, 194, 276, 277]
+        >>> main(run_pos, ex_ls)
 
     """
     if run_pos:

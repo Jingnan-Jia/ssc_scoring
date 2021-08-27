@@ -16,21 +16,24 @@ from monai.transforms import ScaleIntensityRanged
 
 
 def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace = None) -> monai.transforms.Compose:
+    """Return composed transforms for Goh score  prediction.
 
-    """ Transforms for Goh score  prediction.
-    The input image voxel values have to be from 0 to 1 for `SysthesisNewSampled`.
+    .. Note::
+        The input image voxel values have to be from 0 to 1 for `SysthesisNewSampled`.
 
-    :param mode: Selected from 'train', 'valid', 'validaug', and 'test'.
-    :param synthesis: If using snthesis data.
-    :param args:
-    :return:
+    Args:
+        mode: Selected from 'train', 'valid', 'validaug', and 'test'
+        synthesis: If using snthesis data
+        args: argument
 
-    Example:
+    Examples:
 
-    >>> args = ssc_scoring.mymodules.set_args()
-    >>> xformd_score(mode='train', synthesis=False, args=args)
+        >>> args = ssc_scoring.mymodules.set_args()
+        >>> xformd_score(mode='train', synthesis=False, args=args)
 
-    One use case is :meth:`ssc_scoring.mymodules.mydata.LoadScore.xformd`.
+        and
+
+        :meth:`ssc_scoring.mymodules.mydata.LoadScore.xformd`
 
     """
     key = "image_key"
@@ -64,7 +67,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
         xforms.extend([AddChanneld()])
 
     # xforms.append(NormImgPosd())
-    xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
+    # xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
     # xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1500.0, b_max=1500.0, clip=True))
 
     transform = transforms.Compose(xforms)
@@ -74,6 +77,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
 
 def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
     """Composed transforms to obtain 2D slices given 3D image and slice number.
+
     It is used to evaluate the cascaded network (PositionPredictionNet + GohScorePredictionNet)s.
 
     Detailed steps:
@@ -83,15 +87,17 @@ def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
     #. Get the 2D slices given 3D image (step 1) and slice number (step 2).
     #. Add batch channel.
 
-    :param mode: Selected from 'train', 'valid', 'validaug', and 'test'.
-    :param mypath: Instance of PathScore.
-    :return:
+    Args:
+        mode: Selected from 'train', 'valid', 'validaug', and 'test'.
+        mypath: Instance of PathScore.
 
-    Example:
+    Examples:
 
-    >>> xformd_pos2score(mode = "valid", mypath = PathScore(id=1405))
+        >>> xformd_pos2score(mode = "valid", mypath = PathScore(id=1405))
 
-    Its use case is :meth:`ssc_scoring.mymodules.mydata.LoadPos2Score.xformd`.
+        and
+
+        :meth:`ssc_scoring.mymodules.mydata.LoadPos2Score.xformd`.
 
     """
     xforms = [LoadDatad(),
@@ -105,13 +111,13 @@ def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
 
 
 def recon_transformd(mode: str = 'train'):
-    """Transforms for reconstruction network.
+    """Return transforms for reconstruction network.
 
     .. Warning::
         This function is not complete. Please double check its source code before using it.
 
-    :param mode: 'train', 'valid', 'validaug', 'test'.
-    :return: Composed transforms.
+    Args:
+        mode: 'train', 'valid', 'validaug', 'test'.
 
     """
 
@@ -126,7 +132,8 @@ def recon_transformd(mode: str = 'train'):
 
 def xformd_pos(mode: str = 'train', level_node: int = 0, train_on_level: int = 0,
                z_size: int = 192, y_size: int = 256, x_size: int = 256) -> monai.transforms.Compose():
-    """ Transforms for position prediction.
+    """Return composed transforms for position prediction.
+
     Detailed steps:
 
     #. Load 3D CT images.
@@ -155,20 +162,21 @@ def xformd_pos(mode: str = 'train', level_node: int = 0, train_on_level: int = 0
         `train_on_level` is specified when you want your network to output only one level. Then the transform will
          crop a 3D region in which this level must be visible.
 
+    Args:
+        mode: 'train', 'valid', 'validaug', 'test'.
+        level_node: which level is received by the network if it is required.
+        train_on_level: in which level the network want to be trained if it is required.
+        z_size: patch size along z axial
+        y_size: patch size along y axial
+        x_size: patch size along x axial
 
-    :param mode: 'train', 'valid', 'validaug', 'test'.
-    :param level_node: which level is received by the network if it is required.
-    :param train_on_level: in which level the network want to be trained if it is required.
-    :param z_size: patch size along z axial
-    :param y_size: patch size along y axial
-    :param x_size: patch size along x axial
-    :return: Composed transforms.
+    Examples:
 
-    Example:
+        >>> xformd_pos(mode='valid', level_node=0, train_on_level=2, z_size=192, y_size = 256, x_size=256)
 
-    >>> xformd_pos(mode='valid', level_node=0, train_on_level=2, z_size=192, y_size = 256, x_size=256)
+        and
 
-    One use case is :meth:`ssc_scoring.mymodules.mydata.LoadPos.xformd`.
+        :meth:`ssc_scoring.mymodules.mydata.LoadPos.xformd`.
 
     """
     xforms = [LoadDatad()]

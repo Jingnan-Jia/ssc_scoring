@@ -22,6 +22,7 @@ class ReconDatasetd(Dataset):
     .. warning::
         It is not used yet. This dataset code need to be double checked before using it.
     """
+
     def __init__(self, data_x_names, transform=None):
         self.data_x_names = data_x_names
         print("loading 3D CT ...")
@@ -52,8 +53,6 @@ class ReconDatasetd(Dataset):
             self.data_x_slice_idx_gen.append(iter(ls))
         # self.data_x_slice_idx_gen = [(idx for idx in idx_ls) for idx_ls in self.data_x_slice_idx]
 
-
-
     def __len__(self):
         return len(self.data_x_np)
 
@@ -73,12 +72,10 @@ class ReconDatasetd(Dataset):
         return data
 
 
-
 class SynDataset(Dataset):
     """Dataset for SSc score prediction images. The generated images include some synthetic images.
 
-    .. note::
-
+    .. Note::
         All images output from `__init__` function are truncated to [-1500, 1500], then rescale to [0, 1] before
         being fed to transforms. it's convinent for future transform, especially for
         :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`.
@@ -96,7 +93,7 @@ class SynDataset(Dataset):
         self.synthesis = synthesis
         if self.synthesis:
             mask_end = "_lung_mask"  # load all lung masks
-            self.lung_masks_names =  [x.split('.mha')[0]+ mask_end + ".mha" for x in tqdm(self.data_x_names)]
+            self.lung_masks_names = [x.split('.mha')[0] + mask_end + ".mha" for x in tqdm(self.data_x_names)]
             self.lung_masks = [futil.load_itk(x, require_ori_sp=False) for x in tqdm(self.lung_masks_names)]
 
         self.data_x_np = [i[0] for i in self.data_x]
