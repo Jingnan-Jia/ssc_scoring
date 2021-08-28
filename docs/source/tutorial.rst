@@ -64,6 +64,16 @@ Score prediction
 Inference by cascaded networks
 --------------------------------
 
+#. At first, save the slices selected by first position prediction network (before running the following code, please
+change the experiment ID in the code).
+
+    .. code-block:: bash
+
+        python save_corse_slices.py
+
+#. After that, change the dataloader path to the path we created just now and use `infer` mode to run script.
+
+    path = `/data/jjia/ssc_scoring/ssc_scoring/results/models_pos/193_194_276_277/predicted_slices`
 
 
 

@@ -35,8 +35,7 @@ def get_args():
     parser.add_argument('--remark', help='comments on this experiment', type=str)
 
     # Exclusive args
-
-    parser.add_argument('--train_on_level', choices=(1, 2, 3, 4, 5, 0), help='level, 0 denotes all', type=int,
+    parser.add_argument('--train_on_level', choices=(1, 2, 3, 4, 5, 0), help='level 0 denotes all', type=int,
                         default=2)
     parser.add_argument('--level_node', choices=(1, 0), help='if network has an extra level node', type=int, default=0)
     parser.add_argument('--kd', choices=('dist', 'transf', 'no'), help='mode', type=str, default='dist')
