@@ -227,7 +227,7 @@ class LoadScore(LoaderInit):
         super().__init__(resample_z=None, mypath=mypath, label_file=label_file, kfold_seed=kfold_seed,
                          fold=args.fold, total_folds=args.total_folds, ts_level_nb=args.ts_level_nb, level_node=0,
                  train_on_level=0, z_size=None, y_size=None,
-                         x_size=None, batch_size=10, workers=args.workers)
+                         x_size=None, batch_size=args.batch_size, workers=args.workers)
         self.sys = args.sys
         self.sampler = args.sampler
         self.sys_ratio = args.sys_ratio

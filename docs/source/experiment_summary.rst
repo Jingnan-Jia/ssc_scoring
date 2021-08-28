@@ -20,11 +20,65 @@ Status
 
 
 
-Performance of refined PosNet
+Performance of refined PosNet (train high resolution CT)
 -----------------------------------------------------------------------
 
 [position prediction]
 **TLDR: todo.**
+
+- Directly input high resolution CT patches (192 * 512 * 512) into network.
+    **TLDR** Bad effect.**
+
+    This patch can only cover one or two levels. So the labels (relative slice number) for those levels outside
+    the patch would be 0 (lower bound) or 192 (upper bound). To get the position prediction, during inference, we need
+    to have a slice window to output a lot of positions and do some post processing. This method was inspired by the
+    following reference.
+
+    References:
+        S. Belharbi et al., “Spotting L3 slice in CT scans using deep convolutional network and transfer learning,”
+        Comput. Biol. Med., vol. 87, pp. 95–103, Aug. 2017, doi: 10.1016/j.compbiomed.2017.05.018.
+
+    The trained results are pretty bad. It does not have clear peak point as shown in the above reference. So I did not
+    try it anymore.
+
+
+- With `train_on_level` to receive patches from a region which include a specific level position, and output this level.
+
+    Compared with the upper method, current method has 2 differences: 1) the input patches are not cropped from the
+    whole image, but from the region which include a specified level position. 2） the labels only include one level.
+
+    Therefore, we have to train 5 different networks for 5 different level position prediction.
+
+    ==============  ========    ========    ========    ========    =========
+    train_on_level  Fold1        Fold2       Fold3       Fold4      ave_MAE
+    ==============  ========    ========    ========    ========    =========
+    1               602->462    601->463    603->459    604->457    3.8925
+    2               600->464    599->461    ?->466    ->465
+    3               596->468    595->467    598->469    597->470    6.2325
+    4               571->528    572->529    573->520    574->519    2.84
+    5               589->530    ?->532    590->512    ?->527
+    Average                                                         3?
+    ==============  ========    ========    ========    ========    =========
+
+
+- With `level_node` to use an extra node to receive an extra input (level information) in fully connected layer. So the number of nodes in
+fully connected layer became 1025 from 1024.
+
+    **TLDR** Bad effect.**
+
+    The network did not coverage. I think this is because that the extra node is ignored by the
+    network. 1 node in 1025 nodes is really small.
+
+    `Level_node=5`:
+
+    ==============  ====    ====    ====    ====    ====
+    Fold            1       2       3       4       ave
+    ==============  ====    ====    ====    ====    ====
+    Experiment ID   455     456     460     458     ??
+    ==============  ====    ====    ====    ====    ====
+
+    .. Note::
+        Do not use extra node. Directory multiply the level information by fully connected layer.
 
 
 Performance of cascaded refined PosNet
