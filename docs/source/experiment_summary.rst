@@ -12,14 +12,6 @@ Status
 
 
 
-
-
-
-
-
-
-
-
 Performance of refined PosNet (train high resolution CT)
 -----------------------------------------------------------------------
 
@@ -53,10 +45,10 @@ Performance of refined PosNet (train high resolution CT)
     train_on_level  Fold1        Fold2       Fold3       Fold4      ave_MAE
     ==============  ========    ========    ========    ========    =========
     1               602->462    601->463    603->459    604->457    3.8925
-    2               600->464    599->461    ?->466    ->465
+    2               600->464    599->461    688->466    ->465
     3               596->468    595->467    598->469    597->470    6.2325
     4               571->528    572->529    573->520    574->519    2.84
-    5               589->530    ?->532    590->512    ?->527
+    5               589->530    686->532    590->512    687->527    2.6425
     Average                                                         3?
     ==============  ========    ========    ========    ========    =========
 
@@ -134,7 +126,13 @@ tried the other 3 methods.
 Using more patches as the seed of synthetic data
 -----------------------------------------------------------------------
 [score prediction]
-**TLDR: No idea**.
+
+**TLDR: No effect**.
+
+experiments' ID (vgg11_3d): 1658, 1659, 1657, 1656. valid_mae_end5 = 4.99 (averaged in 4 folds)
+
+experiments' ID (resnet18): 1660, 1661, 1663, 1662. valid_mae_end5 = 5.2575 (averaged in 4 folds)
+
 
 .. warning::
     **The following experiments are based on wrong code! Because only a random patch is selected as the seed instead of
