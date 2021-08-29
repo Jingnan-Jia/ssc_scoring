@@ -80,7 +80,7 @@ def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
 def compute_metrics(mypath: Union[PathScore, PathPos],
                     mypath2: Union[PathScore, PathPos] = None,
                     log_dict: dict = None,
-                    modes=['train', 'valid', 'test', 'validaug']) -> dict:
+                    modes = None) -> dict:
     """Compute metrics and record them to log_dict.
 
     Args:
@@ -97,6 +97,8 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
     """
     if not isinstance(modes, list):
         modes = [modes]
+    else:
+        modes = ['train', 'valid', 'test', 'validaug']
 
     for mode in modes:
         if mypath.project_name == 'score':
@@ -108,6 +110,7 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
         try:
             if (not os.path.isfile(label)) and (mypath2 is not None):
                 # mypath2 = Path(eval_id)
+                print(f"{label} does not exist, so I copy all files from {mypath2.id_dir} to {mypath.id_dir}")
                 shutil.copytree(mypath2.id_dir, mypath.id_dir, dirs_exist_ok=True)
 
             out_dt = confusion(label, pred)

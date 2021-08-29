@@ -226,6 +226,8 @@ class Evaluater_score():
 
     def run(self):
         for data in self.dataloader:
+            print(f"data from {data['fpath_key']}")
+
             if 'label_key' not in data:
                 batch_x, batch_y = data['image_key'], data['image_key']
             else:
