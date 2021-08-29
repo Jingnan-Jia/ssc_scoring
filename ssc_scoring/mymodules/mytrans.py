@@ -236,7 +236,7 @@ class RandCropLevelRegiond(RandomizableTransform):
 
         d['label_in_patch_key'] = d['label_in_img_key'] - start
 
-        d['world_key'] = np.array(d['world_key'][self.level - 1]).reshape(-1, )
+        d['world_key'] = np.array(d['ori_world_key'][self.level - 1]).reshape(-1, )
         d['level_key'] = np.array(self.level).reshape(-1, )
 
         return d
