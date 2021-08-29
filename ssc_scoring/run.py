@@ -274,15 +274,15 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
 
     if args.corse_pred_id not in [0, None]:  # Load slices generated from PosNet, predict the scores of the slices
         mypath_pos = PathPos(args.corse_pred_id)  # provide 2D slice directory
-        mypath_score_cascaded = Path(id_ + '_from_cascaded_slice')
-        mypath_score_cascaded.corse_pred_dir = os.path.join(mypath_pos.id_dir, 'predicted_slices')
-        all_loader = LoadScore(mypath_score_cascaded, label_file, seed, args)
-        all_load = all_loader.load()
+        # mypath = Path(str(id_) + '_from_cascaded_slice')
+        mypath.corse_pred_dir = os.path.join(mypath_pos.id_dir, 'predicted_slices')
+        all_loader = LoadScore(mypath, label_file, seed, args)
+        train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
         # start_run('valid', net, all_load, device, loss_fun, loss_fun_mae, opt, mypath, 1000)
-        load_dt = {'valid': all_load}
-        record_best_preds(net, load_dt, mypath_score_cascaded, args)
-        log_dict = compute_metrics(mypath_score_cascaded, args.eval_id, log_dict)
-        print('Finish metrics on corse_pred_id: {args.corse_pred_id}!')
+        load_dt = {'valid': valid_dataloader}
+        record_best_preds(net, load_dt, mypath, args)
+        log_dict = compute_metrics(mypath, args.eval_id, log_dict, modes='valid')
+        print(f'Finish metrics on corse_pred_id: {args.corse_pred_id}!')
         return log_dict
 
     all_loader = LoadScore(mypath, label_file, seed, args)

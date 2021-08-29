@@ -250,7 +250,7 @@ class LoadScore(LoaderInit):
         df_excel = self.df_excel
         file_prefix = "Level" + str(level)
         # 3 neighboring slices for one level
-        print(dir_pat)
+        # print(dir_pat)
         x_up = glob.glob(os.path.join(dir_pat, file_prefix + "_up.mha"))[0]
         x_middle = glob.glob(os.path.join(dir_pat, file_prefix + "_middle.mha"))[0]
         x_down = glob.glob(os.path.join(dir_pat, file_prefix + "_down.mha"))[0]
@@ -291,7 +291,7 @@ class LoadScore(LoaderInit):
         for x, y, mode in zip([tr_x, vd_x, ts_x], [tr_y, vd_y, ts_y], ['train', 'valid', 'test']):
             self.save_xy(x, y, mode)
         # tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:10], tr_y[:10], vd_x[:10], vd_y[:10], ts_x[:10], ts_y[:10]
-        print(f'valid_x for score: \n {vd_x}')
+        # print(f'valid_x for score: \n {vd_x}')
 
         if merge != 0:
             all_x = [*tr_x, *vd_x, *ts_x]
@@ -345,8 +345,8 @@ class LoadPos2Score(LoaderInit):
     def load(self):
         tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = self.prepare_data()
         cache_nb = 10 if len(tr_x) < 50 else 50
-        print('valid_x for pos2score')
-        print(vd_x)
+        # print('valid_x for pos2score')
+        # print(vd_x)
 
         tr_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(tr_x, tr_y)]
         vd_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(vd_x, vd_y)]

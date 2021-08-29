@@ -79,7 +79,8 @@ def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
 
 def compute_metrics(mypath: Union[PathScore, PathPos],
                     mypath2: Union[PathScore, PathPos] = None,
-                    log_dict: dict = None) -> dict:
+                    log_dict: dict = None,
+                    modes=['train', 'valid', 'test', 'validaug']) -> dict:
     """Compute metrics and record them to log_dict.
 
     Args:
@@ -94,7 +95,10 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
         :func:`ssc_scoring.run.train` and :func:`ssc_scoring.run_pos.train`
 
     """
-    for mode in ['train', 'valid', 'test', 'validaug']:
+    if not isinstance(modes, list):
+        modes = [modes]
+
+    for mode in modes:
         if mypath.project_name == 'score':
             label = mypath.label(mode)
             pred = mypath.pred_end5(mode)
