@@ -147,6 +147,11 @@ class LoaderInit(ABC):
 
 class LoadPos(LoaderInit):
     """ LoadData for Position prediction."""
+    def __init__(self, resample_z, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, level_node,
+                 train_on_level, z_size, y_size, x_size, batch_size, workers):
+        super().__init__(resample_z, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, level_node,
+                 train_on_level, z_size, y_size, x_size, batch_size, workers)
+
     def load_per_xy(self, dir_pat: str) -> Tuple[str, np.ndarray]:
         data_name = dir_pat
         idx = int(dir_pat.split('Pat_')[-1][:3])
@@ -241,12 +246,12 @@ class LoadScore(LoaderInit):
         """
         x, y = [], []
         for level in [1, 2, 3, 4, 5]:
-            x_level, y_level = self.load_data_of_a_level(dir_pat, level)
+            x_level, y_level = self._load_data_of_a_level(dir_pat, level)
             x.extend(x_level)
             y.extend(y_level)
         return x, y
 
-    def load_data_of_a_level(self, dir_pat, level):
+    def _load_data_of_a_level(self, dir_pat, level):
         df_excel = self.df_excel
         file_prefix = "Level" + str(level)
         # 3 neighboring slices for one level
@@ -328,6 +333,12 @@ class LoadScore(LoaderInit):
 
 class LoadPos2Score(LoaderInit):
     """TODO: None"""
+
+    def __init__(self, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb):
+
+        super().__init__(0, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, 0, 0, None, None, None, 1, 1)
+
+
     def load_per_xy(self, dir_pat: str) -> Tuple[str, np.ndarray]:
         data_name = dir_pat
         idx = int(dir_pat.split('Pat_')[-1][:3])

@@ -524,11 +524,15 @@ class CascadedSlices:
 
 
 class CoresPosd(Transform):
+    """The predicted **world position** is extracted.
+
+    We do not extract 'relative slice number' because the spacing may be different for each experiments.
+
+    """
     def __init__(self, corse_fpath, data_fpath):
-        self.corse_fpath = corse_fpath
-        self.data_fpath = data_fpath
-        # print(corse_fpath, data_fpath)
-        # print('22222222')
+        self.corse_fpath = corse_fpath  # valid_pred_world.csv
+        self.data_fpath = data_fpath  # valid_data.csv
+
 
     def __call__(self, data):
         print('start corse pos extration ...')
@@ -536,6 +540,8 @@ class CoresPosd(Transform):
         df_data = pd.read_csv(self.data_fpath, delimiter=',', header=None)  # no header for dat.csv
         print(f'len_cores_pred: ', len(df_corse_pos))
         print(f'len_data: ', len(df_data))
+        assert len(df_corse_pos) == len(df_data)
+
         pat_idx = None
         # print("df_data", df_data)
         for idx, row in df_data.iterrows():
@@ -550,15 +556,16 @@ class CoresPosd(Transform):
 
         corse_pred = df_corse_pos.iloc[pat_idx]
         # print('type:', type(corse_pred))
-        data['corse_pred_int_key'] = corse_pred.to_numpy().astype(np.int32)
+        data['coarse_pred_world_key'] = corse_pred.to_numpy().astype(np.int32)
         # data['fpath'] = np.array(data['fpath'])
         # print('corse_pred', data['corse_pred_int_key'])
         # print('type_pred', type(data['corse_pred_int_key']))
-        print(data['corse_pred_int_key'][0],
-              data['corse_pred_int_key'][1],
-              data['corse_pred_int_key'][2],
-              data['corse_pred_int_key'][3],
-              data['corse_pred_int_key'][4])
+        print('coarse_pred_world_key:')
+        print(data['coarse_pred_world_key'][0],
+              data['coarse_pred_world_key'][1],
+              data['coarse_pred_world_key'][2],
+              data['coarse_pred_world_key'][3],
+              data['coarse_pred_world_key'][4])
         return data
 
 
@@ -570,12 +577,16 @@ class SliceFromCorsePosd(Transform):
         img_2d_name_ls = []
         pat_id = d['fpath_key'].split('Pat_')[-1][:3]
         save_pat_dir = 'Pat_' + pat_id
-        for i, slice in enumerate([j for j in d['corse_pred_int_key']]):
-            img_2d_ls.append(img_3d[slice])
+        for i, pred_world in enumerate([j for j in d['coarse_pred_world_key']]):
+            space_z: float = d['space_key'][0]
+            origin_z: float = d['origin_key'][0]
+            slice_nb: int = (pred_world - origin_z)/space_z
+
+            img_2d_ls.append(img_3d[slice_nb])
             img_2d_name_ls.append(os.path.join(save_pat_dir, 'Level' + str(i + 1) + '_middle.mha'))
-            img_2d_ls.append(img_3d[slice + 1])
+            img_2d_ls.append(img_3d[slice_nb + 1])
             img_2d_name_ls.append(os.path.join(save_pat_dir, 'Level' + str(i + 1) + '_up.mha'))
-            img_2d_ls.append(img_3d[slice - 1])
+            img_2d_ls.append(img_3d[slice_nb - 1])
             img_2d_name_ls.append(os.path.join(save_pat_dir, 'Level' + str(i + 1) + '_down.mha'))
 
         img_2d = np.array(img_2d_ls)

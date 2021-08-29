@@ -11,7 +11,8 @@ from ssc_scoring.mymodules.data_synthesis import SysthesisNewSampled
 from ssc_scoring.mymodules.mytrans import RandomAffined, RandomHorizontalFlipd, RandomVerticalFlipd, \
     RandGaussianNoised, LoadDatad, NormImgPosd, AddChanneld, RandomCropPosd, \
     CenterCropPosd, RandCropLevelRegiond, CoresPosd, SliceFromCorsePosd
-from ssc_scoring.mymodules.path import PathScore
+from ssc_scoring.mymodules.path import PathScore, PathPos
+import ssc_scoring
 from monai.transforms import ScaleIntensityRanged
 
 
@@ -75,7 +76,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
     return transform
 
 
-def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
+def xformd_pos2score(mode: str, mypath: PathPos) -> monai.transforms.Compose:
     """Composed transforms to obtain 2D slices given 3D image and slice number.
 
     It is used to evaluate the cascaded network (PositionPredictionNet + GohScorePredictionNet)s.
@@ -91,9 +92,10 @@ def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
         mode: Selected from 'train', 'valid', 'validaug', and 'test'.
         mypath: Instance of PathScore.
 
+
     Examples:
 
-        >>> xformd_pos2score(mode = "valid", mypath = PathScore(id=1405))
+        >>> xformd_pos2score(mode = "valid", mypath = PathPos(id=193))
 
         and
 
@@ -101,7 +103,7 @@ def xformd_pos2score(mode: str, mypath: PathScore) -> monai.transforms.Compose:
 
     """
     xforms = [LoadDatad(),
-              CoresPosd(corse_fpath=mypath.pred_int(mode), data_fpath=mypath.data(mode)),
+              CoresPosd(corse_fpath=mypath.pred_world(mode), data_fpath=mypath.data(mode)),
               SliceFromCorsePosd(),
               AddChanneld()]
 
