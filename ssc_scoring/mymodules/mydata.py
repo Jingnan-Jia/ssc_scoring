@@ -335,7 +335,7 @@ class LoadPos2Score(LoaderInit):
     """TODO: None"""
 
     def __init__(self, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb):
-
+        # Most arguments are not importent at all. The only arg which matter is resample_z=0, batch_size=1, worker=0.
         super().__init__(0, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, 0, 0, None, None, None, 1, 0)
 
 
@@ -348,12 +348,10 @@ class LoadPos2Score(LoaderInit):
             data_label.append(y)
         return data_name, np.array(data_label)
 
-
     def xformd(self, mode):
         return xformd_pos2score(mode, self.mypath)
 
-
-    def load(self):
+    def load(self):  # only load validation dataset
         tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = self.prepare_data()
         cache_nb = 10 if len(tr_x) < 50 else 50
         # print('valid_x for pos2score')

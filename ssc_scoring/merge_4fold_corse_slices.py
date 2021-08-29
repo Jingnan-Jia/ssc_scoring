@@ -2,12 +2,12 @@
 # @Time    : 7/13/21 11:18 PM
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
-import shutil
-import os
-from pathlib import Path
 import glob
+import os
 import shutil
+
 from ssc_scoring.mymodules.path import PathPos
+
 
 def merge_corse_slices(ex_ls) -> None:
     """Merge/copy the predicted slices from 4 folds into the same directory.
@@ -26,11 +26,18 @@ def merge_corse_slices(ex_ls) -> None:
         os.makedirs(all_dir)
 
     for ex_id in ex_ls:
+        print(f'copy validation files from {ex_id} to {all_dir} ...')
         source_dir = PathPos(id=ex_id).id_dir + '/predicted_slices'
         file_names = os.listdir(source_dir)
         for file_name in file_names:
-            shutil.move(os.path.join(source_dir, file_name), os.path.join(all_dir,file_name))
+            print(f'copy file_name')
+            shutil.copy(os.path.join(source_dir, file_name), os.path.join(all_dir,file_name))
 
+    nb_pats = 0
+    for folder in os.listdir(all_dir):
+        nb_pats += 1
+
+    print(f'there are already {nb_pats} patients in {all_dir}')
 
     source_dir = PathPos().ori_data_dir
     # source_dir = '/data/jjia/ssc_scoring/ssc_scoring/dataset/SSc_DeepLearning'
