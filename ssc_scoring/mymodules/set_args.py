@@ -19,7 +19,7 @@ def get_args() -> argparse.Namespace:
     # Common args with set_args_pos.py
     parser.add_argument('--mode', choices=('train', 'infer', 'continue_train', 'transfer_learning'),
                         help='mode', type=str, default='infer')
-    parser.add_argument('--eval_id', help='id used for inference, or continue_train', type=int, default=0)
+    parser.add_argument('--eval_id', help='id used for inference, or continue_train', type=int, default=1410)
     parser.add_argument('--net', choices=('vgg11_bn', 'cnn3fc1', 'cnn2fc1', 'vgg16', 'vgg19', 'resnet18',
                                           'resnext50_32x4d', 'resnext101_32x8d'),
                         help='network name', type=str, default='vgg11_bn')
@@ -28,7 +28,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--fc1_nodes', help='the number of nodes of fc1 layer, original is 4096', type=int,
                         default=1024)
     parser.add_argument('--total_folds', choices=(4, 5), help='total folds', type=int, default=4)
-    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='fold number', type=int, default=2)
+    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='fold number', type=int, default=4)
     parser.add_argument('--valid_period', help='how many epochs between 2 validation', type=int, default=5)
     parser.add_argument('--workers', help='number of workers for dataloader', type=int, default=6)
     parser.add_argument('--ts_level_nb', choices=(235, 240), help='if customer sampler?', type=int, default=240)

@@ -119,7 +119,7 @@ We need the following steps to evaluate cascaded networks (PosNet + ScoreNet).
 
         python merge_4fold_corse_slices.py
 
-#. change dataset directory, then run score network in 'infer' mode.
+#. run score network in 'infer' mode.
 
 
 

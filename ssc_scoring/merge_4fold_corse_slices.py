@@ -30,8 +30,8 @@ def merge_corse_slices(ex_ls) -> None:
         source_dir = PathPos(id=ex_id).id_dir + '/predicted_slices'
         file_names = os.listdir(source_dir)
         for file_name in file_names:
-            print(f'copy file_name')
-            shutil.copy(os.path.join(source_dir, file_name), os.path.join(all_dir,file_name))
+            print(f'copy {file_name}')
+            shutil.copytree(os.path.join(source_dir, file_name), os.path.join(all_dir,file_name))
 
     nb_pats = 0
     for folder in os.listdir(all_dir):
