@@ -255,22 +255,6 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     log_dict['lr'] = lr
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=args.weight_decay)  # weight decay is L2 weight norm
 
-    if args.corse_pred_id not in [0, None]:  # todo: why?
-        mypath_pos = PathPos(args.corse_pred_id)
-        mypath.corse_pred_dir = os.path.join(mypath_pos.id_dir, 'predicted_slices')
-        # all_loader = LoadScore(mypath, label_file, seed, args)
-        # all_load = all_loader.load(merge=args.corse_pred_id)
-        # start_run('valid', net, all_load, device, loss_fun, loss_fun_mae, opt, mypath, 1000)
-        # load_dt = {'valid': all_load}
-        # record_best_preds(net, load_dt, mypath, args)
-        # log_dict = compute_metrics(mypath, args.eval_id, log_dict)
-        # print('Finish all things!')
-        # return log_dict
-
-    # else:
-    all_loader = LoadScore(mypath, label_file, seed, args)
-    train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
-
     if args.eval_id:  # evaluate trained network
         mypath2 = Path(args.eval_id)
         if args.mode == "transfer_learning":  # todo: using other pre-trained weights apart from imageNet
@@ -287,6 +271,22 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
             raise Exception("wrong mode: " + args.mode)
     else:
         valid_mae_best = 10000  # initiate mae_best as a very big value
+
+    if args.corse_pred_id not in [0, None]:  # Load slices generated from PosNet, predict the scores of the slices
+        mypath_pos = PathPos(args.corse_pred_id)  # provide 2D slice directory
+        mypath_score_cascaded = Path(id_ + '_from_cascaded_slice')
+        mypath_score_cascaded.corse_pred_dir = os.path.join(mypath_pos.id_dir, 'predicted_slices')
+        all_loader = LoadScore(mypath_score_cascaded, label_file, seed, args)
+        all_load = all_loader.load()
+        # start_run('valid', net, all_load, device, loss_fun, loss_fun_mae, opt, mypath, 1000)
+        load_dt = {'valid': all_load}
+        record_best_preds(net, load_dt, mypath_score_cascaded, args)
+        log_dict = compute_metrics(mypath_score_cascaded, args.eval_id, log_dict)
+        print('Finish metrics on corse_pred_id: {args.corse_pred_id}!')
+        return log_dict
+
+    all_loader = LoadScore(mypath, label_file, seed, args)
+    train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
 
     epochs = args.epochs
 
