@@ -40,15 +40,15 @@ def save_corse_slice(args, ex_dt):
 
     """
     for fold, ex_id in ex_dt.items():
+        print(f'------fold: {fold}   ex_id: {ex_id}-------')
         args.eval_id = ex_id
         args.fold = fold
         mypath = PathPos(args.eval_id)
 
         label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"
         seed = 49
-        all_loader = LoadPos2Score(mypath, label_file, seed, args.fold, args.total_folds, args.ts_level_nb, args.level_node,
-                               args.train_on_level)
-        train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
+        all_loader = LoadPos2Score(mypath, label_file, seed, args.fold, args.total_folds, args.ts_level_nb)
+        valid_dataloader = all_loader.load()
 
         dataloader_dict = {'valid': valid_dataloader}
         # , 'valid': valid_dataloader, 'validaug': validaug_dataloader}
@@ -56,7 +56,7 @@ def save_corse_slice(args, ex_dt):
         for mode, loader in dataloader_dict.items():
             print(f'start save slices for {mode}')
             for batch_data in loader:  # one data, with shape (1, channel, x, y)
-                print('all paths for this data')
+                # print('all paths for this data')
                 print(batch_data['fpath2save'])
                 print('shape of image')
                 print(batch_data['image_key'].shape)

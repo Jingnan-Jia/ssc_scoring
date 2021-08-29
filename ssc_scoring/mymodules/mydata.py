@@ -336,7 +336,7 @@ class LoadPos2Score(LoaderInit):
 
     def __init__(self, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb):
 
-        super().__init__(0, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, 0, 0, None, None, None, 1, 1)
+        super().__init__(0, mypath, label_file, kfold_seed, fold, total_folds, ts_level_nb, 0, 0, None, None, None, 1, 0)
 
 
     def load_per_xy(self, dir_pat: str) -> Tuple[str, np.ndarray]:
@@ -362,19 +362,21 @@ class LoadPos2Score(LoaderInit):
         tr_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(tr_x, tr_y)]
         vd_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(vd_x, vd_y)]
         ts_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(ts_x, ts_y)]
-        tr_dataset = monai.data.CacheDataset(data=tr_data, transform=self.xformd('train'),  num_workers=4,
-                                                cache_rate=0.1)
-        vdaug_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('train'), num_workers=4,
-                                                cache_rate=0.1)
-        vd_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('valid'), num_workers=4,
-                                             cache_rate=0.1)
-        ts_dataset = monai.data.PersistentDataset(data=ts_data, transform=self.xformd('valid'),
-                                                  cache_dir="persistent_cache")
-        train_dataloader = iter(tr_dataset)
-        validaug_dataloader = iter(vdaug_dataset)
+        # tr_dataset = monai.data.CacheDataset(data=tr_data, transform=self.xformd('train'),  num_workers=4,
+        #                                         cache_rate=0.1)
+        # vdaug_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('train'), num_workers=4,
+        #                                         cache_rate=0.1)
+        vd_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('valid'), num_workers=0,
+                                             cache_rate=1)
+        # ts_dataset = monai.data.PersistentDataset(data=ts_data, transform=self.xformd('valid'),
+        #                                           cache_dir="persistent_cache")
+        # train_dataloader = iter(tr_dataset)
+        # validaug_dataloader = iter(vdaug_dataset)
         valid_dataloader = iter(vd_dataset)
-        test_dataloader = iter(ts_dataset)
+        # test_dataloader = iter(ts_dataset)
 
-        return train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader
+        # return train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader
+
+        return valid_dataloader
 
 

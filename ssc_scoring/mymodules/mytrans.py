@@ -540,15 +540,18 @@ class CoresPosd(Transform):
         df_data = pd.read_csv(self.data_fpath, delimiter=',', header=None)  # no header for dat.csv
         print(f'len_cores_pred: ', len(df_corse_pos))
         print(f'len_data: ', len(df_data))
-        assert len(df_corse_pos) == len(df_data)
+        if len(df_corse_pos) != len(df_data):
+            print(f'df_corse_pos:{df_corse_pos}')
+            print(f'df_data: {df_data}')
+            raise Exception(f'the lenth of {self.corse_fpath} and {self.data_fpath} IS Not equal.')
 
         pat_idx = None
         # print("df_data", df_data)
         for idx, row in df_data.iterrows():
             # print(f'idx: ', idx)
-            print('========')
-            print(data['fpath_key'].split('Pat_')[-1][:3])
-            print(row.iloc[0].split('Pat_')[-1][:3])
+            # print('========')
+            # print(data['fpath_key'].split('Pat_')[-1][:3])
+            # print(row.iloc[0].split('Pat_')[-1][:3])
             if data['fpath_key'].split('Pat_')[-1][:3] == row.iloc[0].split('Pat_')[-1][:3]:
                 pat_idx = idx
                 break
@@ -580,7 +583,8 @@ class SliceFromCorsePosd(Transform):
         for i, pred_world in enumerate([j for j in d['coarse_pred_world_key']]):
             space_z: float = d['space_key'][0]
             origin_z: float = d['origin_key'][0]
-            slice_nb: int = (pred_world - origin_z)/space_z
+            slice_nb: int = int((pred_world - origin_z)/space_z)
+            print(f'slice_nb: {slice_nb}')
 
             img_2d_ls.append(img_3d[slice_nb])
             img_2d_name_ls.append(os.path.join(save_pat_dir, 'Level' + str(i + 1) + '_middle.mha'))
@@ -595,7 +599,7 @@ class SliceFromCorsePosd(Transform):
         d['fpath2save'] = img_2d_name_ls
         d['fpath_key'] = np.array([d['fpath_key']])
 
-        print("d['fpath2save']", d['fpath2save'])
+        # print("d['fpath2save']", d['fpath2save'])
         # print(d.keys())
         # for key in d.keys():
         #     print(key, type(d[key]))
