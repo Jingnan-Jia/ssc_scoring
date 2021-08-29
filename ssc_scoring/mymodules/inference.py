@@ -2,19 +2,18 @@
 # @Time    : 7/6/21 7:17 PM
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
-from typing import Dict
+
+from typing import (Union, Dict)
 
 import monai
 import myutil.myutil as futil
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from typing import (List, Tuple, Optional, Union, Dict, Sequence)
-import sys
 
 from ssc_scoring.mymodules.mytrans import LoadDatad, NormImgPosd, RandCropLevelRegiond, CropCorseRegiond
-from ssc_scoring.mymodules.path import PathPos as Path
 from ssc_scoring.mymodules.path import PathInit
+from ssc_scoring.mymodules.path import PathPos as Path
 
 
 def SlidingLoader(fpath, world_pos, z_size, stride=1, batch_size=1, mode='valid', args=None):
@@ -250,7 +249,7 @@ class Evaluater_score():
             record_preds(self.mode, batch_y, pred, self.mypath)
 
 
-def record_best_preds(net: torch.nn.Module, data_dict: Dict[str, DataLoader], mypath: PathInit, args):
+def record_best_preds(net: torch.nn.Module, data_dict: Dict[str, DataLoader], mypath: Path, args):
     net.load_state_dict(torch.load(mypath.model_fpath))  # load the best weights to do evaluation
     for mode, data in data_dict.items():
         dataloader = data['dl'] if isinstance(data, dict) else data
