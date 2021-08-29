@@ -19,7 +19,7 @@ def get_args() -> argparse.Namespace:
     # Common args with set_args_pos.py
     parser.add_argument('--mode', choices=('train', 'infer', 'continue_train', 'transfer_learning'),
                         help='mode', type=str, default='infer')
-    parser.add_argument('--eval_id', help='id used for inference, or continue_train', type=int, default=1404)
+    parser.add_argument('--eval_id', help='id used for inference, or continue_train', type=int, default=0)
     parser.add_argument('--net', choices=('vgg11_bn', 'cnn3fc1', 'cnn2fc1', 'vgg16', 'vgg19', 'resnet18',
                                           'resnext50_32x4d', 'resnext101_32x8d'),
                         help='network name', type=str, default='vgg11_bn')

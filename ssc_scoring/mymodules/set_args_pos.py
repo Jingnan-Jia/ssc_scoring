@@ -30,6 +30,7 @@ def get_args():
     parser.add_argument('--epochs', help='total epochs', type=int, default=1000)
     parser.add_argument('--weight_decay', help='L2 regularization', type=float,
                         default=0.0001)  # must be a float number !
+    parser.add_argument('--batch_size', help='batch_size', type=int, default=4)
     parser.add_argument('--outfile', help='output file when running by script instead of pycharm', type=str)
     parser.add_argument('--hostname', help='hostname of the server', type=str)
     parser.add_argument('--remark', help='comments on this experiment', type=str)
@@ -38,7 +39,7 @@ def get_args():
     parser.add_argument('--train_on_level', choices=(1, 2, 3, 4, 5, 0), help='level 0 denotes all', type=int,
                         default=2)
     parser.add_argument('--level_node', choices=(1, 0), help='if network has an extra level node', type=int, default=0)
-    parser.add_argument('--kd', choices=('dist', 'transf', 'no'), help='mode', type=str, default='dist')
+    parser.add_argument('--kd', choices=('dist', 'transf', 'no'), help='mode', type=str, default='no')
     parser.add_argument('--kd_t_name', choices=('resnet3d_10', 'resnet3d_18', 'resnet3d_34', 'resnet3d_50',
                                                 'resnet3d_101', 'resnet3d_152', 'resnet3d_200', 'unet3d'),
                         type=str, default='resnet3d_34')
@@ -48,7 +49,6 @@ def get_args():
     parser.add_argument('--z_size', help='length of patch along z axil ', type=int, default=192)
     parser.add_argument('--y_size', help='length of patch along y axil ', type=int, default=256)
     parser.add_argument('--x_size', help='length of patch along x axil ', type=int, default=256)
-    parser.add_argument('--batch_size', help='batch_size', type=int, default=4)
     parser.add_argument('--infer_stride', help='infer_stride', type=int, default=4)
 
     args = parser.parse_args()

@@ -110,7 +110,6 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
         try:
             if (not os.path.isfile(label)) and (mypath2 is not None):
                 # mypath2 = Path(eval_id)
-                print(f"{label} does not exist, so I copy all files from {mypath2.id_dir} to {mypath.id_dir}")
                 shutil.copytree(mypath2.id_dir, mypath.id_dir, dirs_exist_ok=True)
 
             out_dt = confusion(label, pred)
