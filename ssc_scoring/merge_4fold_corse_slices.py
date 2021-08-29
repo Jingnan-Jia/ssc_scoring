@@ -33,7 +33,7 @@ def merge_corse_slices(ex_ls) -> None:
 
 
     source_dir = PathPos().ori_data_dir
-    source_dir = '/data/jjia/ssc_scoring/ssc_scoring/dataset/SSc_DeepLearning'
+    # source_dir = '/data/jjia/ssc_scoring/ssc_scoring/dataset/SSc_DeepLearning'
     print(source_dir)
     dir_names = os.listdir(source_dir)
     dir_names = [i for i in dir_names if 'Pat' in i]
