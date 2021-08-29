@@ -71,4 +71,7 @@ def get_args() -> argparse.Namespace:
     if args.mode == "train" and (args.eval_id != 0):
         raise Exception(f'train mode should not have eval_id {args.eval_id}')
 
+    if args.corse_pred_id:
+        args.sys = 0
+
     return args
