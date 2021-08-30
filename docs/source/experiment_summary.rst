@@ -84,8 +84,23 @@ Performance of cascaded networks
 -----------------------------------------------------------------------
 
 [PosNet + ScoreNet]
-**TLDR: todo.**
+**TLDR: Very good! The PosNet can not affect the final results**. More details please see word documents.
 
+PosNet: 193_194_276_277
+ScoreNet: 1405_1404_1411_1410
+
+Pure ScoreNet performance:
+
+==================  =====
+valid_WK_disext     0.647
+valid_WK_gg
+
+
+PosNet + ScoreNet performance:
+
+==================  =====
+valid_WK_disext     0.644
+valid_WK_gg
 
 Effect of different normalization methods
 --------------------------------------------------------------------

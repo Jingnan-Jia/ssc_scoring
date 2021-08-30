@@ -119,9 +119,11 @@ We need the following steps to evaluate cascaded networks (PosNet + ScoreNet).
 
         python merge_4fold_corse_slices.py
 
-#. run score network in 'infer' mode.
+#. run score network in 'infer' mode. Fill the correct eval_id and fold. And let `corse_pred_id="193_194_276_277"`.
 
+    .. code-block:: bash
 
+        python run.py
 
 
 Train another network to refine position prediction
