@@ -255,7 +255,8 @@ def train(id: int, log_dict: dict, args):
     #                    'test': test_dataloader}
     if args.kd != 'dist':
         record_best_preds(net, data_dt, mypath, args)
-        log_dict = compute_metrics(mypath, PathPos(args.eval_id), log_dict)
+        log_dict = compute_metrics(mypath, PathPos(args.eval_id), log_dict,
+                                   modes=['train', 'valid', 'test', 'validaug'])
     data_dt['train']['ds'].shutdown()
     print('Finish all things!')
     return log_dict
