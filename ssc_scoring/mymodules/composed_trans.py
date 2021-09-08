@@ -67,7 +67,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
     else:
         xforms.extend([AddChanneld()])
 
-    xforms.append(NormImgPosd())
+    # xforms.append(NormImgPosd())
     # xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1.0, b_max=1.0, clip=True))
     # xforms.append(ScaleIntensityRanged('image_key', a_min=-1500.0, a_max=1500.0, b_min=-1500.0, b_max=1500.0, clip=True))
 
