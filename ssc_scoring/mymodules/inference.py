@@ -225,6 +225,7 @@ class Evaluater_score():
 
     def run(self):
         for data in self.dataloader:
+            print(f'mode: {self.mode}, ==========')
             print(f"data from {data['fpath_key']}")
 
             if 'label_key' not in data:
@@ -245,6 +246,8 @@ class Evaluater_score():
             else:
                 with torch.no_grad():
                     pred = self.net(batch_x)
+            print(f'batch_pred is: {pred}')
+            print(f'mode: {self.mode}, ==========')
 
             record_preds(self.mode, batch_y, pred, self.mypath)
 
