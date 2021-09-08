@@ -6,8 +6,6 @@
 # Wilcoxon signed-rank test
 import numpy as np
 import pandas as pd
-from numpy.random import seed
-from numpy.random import randn
 from scipy.stats import wilcoxon
 # seed the random number generator
 # seed(1)
