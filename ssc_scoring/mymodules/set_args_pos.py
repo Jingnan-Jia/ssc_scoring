@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument('--fc1_nodes', help='the number of nodes of fc2 layer, original is 4096', type=int,
                         default=1024)
     parser.add_argument('--total_folds', choices=(4, 5), help='4-fold training', type=int, default=4)
-    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='1 to 4', type=int, default=3)
+    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='1 to 4', type=int, default=4)
     parser.add_argument('--valid_period', help='how many epochs between 2 validation', type=int, default=5)
     parser.add_argument('--workers', help='number of workers for dataloader', type=int, default=6)
     parser.add_argument('--ts_level_nb', choices=(235, 240), help='if customer sampler?', type=int, default=240)
