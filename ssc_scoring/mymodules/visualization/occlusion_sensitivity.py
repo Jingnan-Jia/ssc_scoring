@@ -4,6 +4,8 @@
 # @Email   : jiajingnan2222@gmail.com
 import copy
 import time
+from ssc_scoring.mymodules.mydata import LoadScore
+from ssc_scoring.mymodules.set_args import get_args
 
 import cv2
 import os
@@ -95,7 +97,7 @@ def grad_cam(x, y, net, nb_img):
     cam_show_img(x, fmap, grads_val, mypath.id_dir, nb_img)
 
 
-def saliency_map(x, y, net):  # for one image
+def occlusion_map(x, y, net):  # for one image
     x = x.to(device)
     net.to(device)
     out_ori = net(x) # (10, 1, 3)
@@ -243,8 +245,14 @@ def normalize_255(map_1_po):
     return map_1_po
 
 if __name__ == '__main__':
+    args = get_args()
+
     id = 1405
     mypath = Path(id)
+    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
+    seed = 49  # for split of  cross-validation
+    all_loader = LoadScore(mypath, label_file, seed, args)
+    train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
 
     tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = prepare_data(mypath)
     ts_dataset = SysDataset(ts_x[:10], ts_y[:10], transform=ssc_transformd())
@@ -255,8 +263,6 @@ if __name__ == '__main__':
     net.load_state_dict(torch.load(mypath.model_fpath, map_location=device))
     net.eval()  # 8
     print(net)
-
-
 
     nb_img = 0
     while nb_img < 10:
@@ -269,6 +275,6 @@ if __name__ == '__main__':
                 print(f'idx is okay, {idx}')
                 x, y = x_[None], y_[None]
                 # grad_cam(x, y, net, nb_img)
-                saliency_map(x, y, net)
+                occlusion_map(x, y, net)
 
                 nb_img += 1
