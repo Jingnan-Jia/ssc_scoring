@@ -8,18 +8,53 @@ List of used scripts
 
 =============================   ====================================
 collect_16_patient_results.py
-compute_metrics.py
+compute_metrics.py              used at :ref:`Compute metrics`
 extract_lung.py                 used at :ref:`Score prediction`
-extract_synthetic_label.py
+extract_synthetic_label.py      used at :ref:`Synthetic label distribution`
 generate_ct_masked_by_lung.py   used at :ref:`Score prediction`
 merge_4_fold_results.py
 merge_4fold_corse_slices.py     used at :ref:`Cascaded networks`
 run.py                          used at :ref:`Score prediction`
 run_pos.py                      used at :ref:`Position prediction`
 save_corse_slices.py            used at :ref:`Cascaded networks`
-statistics_lung.py
+statistics_lung.py              used at :ref:`valuable boundary`
 wilcoxon.py
 =============================   ====================================
+
+
+
+.. _valuable boundary:
+Valuable box boundary
+----------------------
+If you want to know the valuable voxel boundary of each CT scan, this script will give you the box boundary of
+valuable pixels. Here the 'valuable voxels/pixels' mean the voxels/pixels' value is greater than the minimun value of
+the whole image.
+
+    .. code-block:: bash
+
+        python statistics_lung.py
+
+
+
+.. _Compute metrics:
+Compute metrics
+-------------------
+When you want to get the metrics of a completed experiments, or when you want to compare the experiments' results with
+human observer, you can use this file.
+
+    .. code-block:: bash
+
+        python compute_metrics.py
+
+
+.. _Synthetic label distribution:
+Verify label distribution
+--------------------------
+This aims to visually check if the synthetic label distribution are balanced.
+
+    .. code-block:: bash
+
+        python extract_synthetic_label.py
 
 
 .. _Position prediction:
