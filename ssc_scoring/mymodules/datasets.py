@@ -30,7 +30,7 @@ class ReconDatasetd(Dataset):
         self.data_x_np = [i[0] for i in self.data_x]
 
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
-        print("normalizing data")
+        print("truncated to [-1500, 1500], then to [0, 1]")
         self.data_x_np = [normalize0to1(x_np) for x_np in tqdm(self.data_x_np)]
 
         self.data_x_np = [x.astype(np.float32) for x in self.data_x_np]
@@ -98,7 +98,8 @@ class SynDataset(Dataset):
 
         self.data_x_np = [i[0] for i in self.data_x]
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
-        print('normalizing data')
+        print("truncated to [-1500, 1500], then to [0, 1]")
+
         self.data_x_np = [normalize0to1(x_np) for x_np in tqdm(self.data_x_np)]
         # scale data to 0~1, it's convinent for future transform during dataloader
         self.data_x_or_sp = [[i[1], i[2]] for i in self.data_x]
