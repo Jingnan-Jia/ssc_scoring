@@ -228,15 +228,18 @@ class LoadPos(LoaderInit):
 
 class LoadScore(LoaderInit):
     """ LoadData for Goh score prediction."""
-    def __init__(self, mypath, label_file, kfold_seed, args):
+    def __init__(self, mypath, label_file, kfold_seed, args, nb_img = None, require_lung_mask=False):
         super().__init__(resample_z=None, mypath=mypath, label_file=label_file, kfold_seed=kfold_seed,
                          fold=args.fold, total_folds=args.total_folds, ts_level_nb=args.ts_level_nb, level_node=0,
-                 train_on_level=0, z_size=None, y_size=None,
+                         train_on_level=0, z_size=None, y_size=None,
                          x_size=None, batch_size=args.batch_size, workers=args.workers)
         self.sys = args.sys
         self.sampler = args.sampler
         self.sys_ratio = args.sys_ratio
         self.args = args
+        self.nb_img = nb_img
+        self.masked_by_lung = args.masked_by_lung
+        self.require_lung_mask = require_lung_mask
 
     def load_per_xy(self, dir_pat: str) -> Tuple[List, List]:
         """
@@ -256,9 +259,14 @@ class LoadScore(LoaderInit):
         file_prefix = "Level" + str(level)
         # 3 neighboring slices for one level
         # print(dir_pat)
-        x_up = glob.glob(os.path.join(dir_pat, file_prefix + "_up.mha"))[0]
-        x_middle = glob.glob(os.path.join(dir_pat, file_prefix + "_middle.mha"))[0]
-        x_down = glob.glob(os.path.join(dir_pat, file_prefix + "_down.mha"))[0]
+        if self.masked_by_lung:
+            x_up = glob.glob(os.path.join(dir_pat, file_prefix + "_up_MaskedByLung.mha"))[0]
+            x_middle = glob.glob(os.path.join(dir_pat, file_prefix + "_middle_MaskedByLung.mha"))[0]
+            x_down = glob.glob(os.path.join(dir_pat, file_prefix + "_down_MaskedByLung.mha"))[0]
+        else:
+            x_up = glob.glob(os.path.join(dir_pat, file_prefix + "_up.mha"))[0]
+            x_middle = glob.glob(os.path.join(dir_pat, file_prefix + "_middle.mha"))[0]
+            x_down = glob.glob(os.path.join(dir_pat, file_prefix + "_down.mha"))[0]
         x = [x_up, x_middle, x_down]
 
         excel = df_excel
@@ -295,7 +303,9 @@ class LoadScore(LoaderInit):
         tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = self.prepare_data()
         for x, y, mode in zip([tr_x, vd_x, ts_x], [tr_y, vd_y, ts_y], ['train', 'valid', 'test']):
             self.save_xy(x, y, mode)
-        # tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:10], tr_y[:10], vd_x[:10], vd_y[:10], ts_x[:10], ts_y[:10]
+        if self.nb_img:
+            tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:self.nb_img], tr_y[:self.nb_img], vd_x[:self.nb_img], \
+                                                 vd_y[:self.nb_img], ts_x[:self.nb_img], ts_y[:self.nb_img]
         # print(f'valid_x for score: \n {vd_x}')
 
         if merge != 0:
@@ -308,13 +318,13 @@ class LoadScore(LoaderInit):
             return all_loader
 
         tr_dataset = SynDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args),
-                                synthesis=self.sys)
+                                synthesis=self.sys, require_lung_mask=self.require_lung_mask)
         vd_data_aug = SynDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args),
-                                 synthesis=self.sys)
+                                 synthesis=self.sys, require_lung_mask=self.require_lung_mask)
         vd_dataset = SynDataset(vd_x, vd_y, transform=self.xformd("valid", synthesis=False, args=self.args),
-                                synthesis=False)  # valid original data, without synthetic images
+                                synthesis=False, require_lung_mask=self.require_lung_mask)  # valid original data, without synthetic images
         ts_dataset = SynDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args),
-                                synthesis=False)  # test original data, without synthetic images
+                                synthesis=False, require_lung_mask=self.require_lung_mask)  # test original data, without synthetic images
         sampler = sampler_by_disext(tr_y, self.sys_ratio) if self.sampler else None
         print(f'sampler is {sampler}')
         tr_shuffle = True if sampler is None else False
