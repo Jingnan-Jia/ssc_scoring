@@ -17,13 +17,23 @@ merge_4fold_corse_slices.py     used at :ref:`Cascaded networks`
 run.py                          used at :ref:`Score prediction`
 run_pos.py                      used at :ref:`Position prediction`
 save_corse_slices.py            used at :ref:`Cascaded networks`
-statistics_lung.py              used at :ref:`valuable boundary`
+statistics_lung.py              used at :ref:`Valuable boundary`
 wilcoxon.py
+occlusion_sensitivity.py        used at :ref:`Occlusion`
 =============================   ====================================
 
 
+.. _Occlusion:
+Occlusion sensitivity
+----------------------
+Get the occlusion sensitivity map, or called attention map.
 
-.. _valuable boundary:
+    .. code-block:: bash
+
+        python occlusion_sensitivity.py
+
+
+.. _Valuable boundary:
 Valuable box boundary
 ----------------------
 If you want to know the valuable voxel boundary of each CT scan, this script will give you the box boundary of
