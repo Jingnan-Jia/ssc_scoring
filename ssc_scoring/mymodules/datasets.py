@@ -82,8 +82,8 @@ class SynDataset(Dataset):
 
     """
 
-    def __init__(self, data_x_names, data_y_list, index: list = None, transform=None, synthesis=False):
-
+    def __init__(self, data_x_names, data_y_list, index: list = None, transform=None, synthesis=False, require_lung_mask=False):
+        self.require_lung_mask = require_lung_mask
         self.data_x_names, self.data_y_list = np.array(data_x_names), np.array(data_y_list)
         if index is not None:
             self.data_x_names = self.data_x_names[index]
@@ -91,16 +91,22 @@ class SynDataset(Dataset):
         print('loading data ...')  # All images are loaded. It is 2D slices, so gpu memory is okay to fit them.
         self.data_x = [futil.load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
         self.synthesis = synthesis
-        if self.synthesis:
+        if self.synthesis or self.require_lung_mask:  # return lung mask in the data dictionary
             mask_end = "_lung_mask"  # load all lung masks
             self.lung_masks_names = [x.split('.mha')[0] + mask_end + ".mha" for x in tqdm(self.data_x_names)]
             self.lung_masks = [futil.load_itk(x, require_ori_sp=False) for x in tqdm(self.lung_masks_names)]
+            # self.lung_masks = []
+
 
         self.data_x_np = [i[0] for i in self.data_x]
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
         print("truncated to [-1500, 1500], then to [0, 1]")
 
         self.data_x_np = [normalize0to1(x_np) for x_np in tqdm(self.data_x_np)]
+
+        # if self.synthesis or self.require_lung_mask:  # return lung mask in the data dictionary
+        #     self.lung_masks = [normalize0to1(x_np) for x_np in tqdm(self.lung_masks)]
+
         # scale data to 0~1, it's convinent for future transform during dataloader
         self.data_x_or_sp = [[i[1], i[2]] for i in self.data_x]
         self.ori = np.array([i[1] for i in self.data_x])  # shape order: z, y, x
@@ -134,7 +140,7 @@ class SynDataset(Dataset):
                 'space_key': self.sp[idx],
                 'origin_key': self.ori[idx],
                 'fpath_key': self.data_x_names[idx]}
-        if self.synthesis:
+        if self.synthesis or self.require_lung_mask:
             new_dict = {'lung_mask_key': self.lung_masks[idx]}
             data.update(new_dict)
         if self.transform:
