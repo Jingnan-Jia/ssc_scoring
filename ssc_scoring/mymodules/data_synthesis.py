@@ -34,13 +34,13 @@ ori_nb = manager.Value('ori_nb', 0)
 sys_nb = manager.Value('sys_nb', 0)
 
 
-def savefig(save_flag: bool, img: np.ndarray, fpath: str, dir: str = "image_samples") -> None:
+def savefig(save_flag: bool, img: np.ndarray, image_name: str, dir: str = "image_samples") -> None:
     """Save figure.
 
     Args:
         save_flag: Save or not.
         img: Image numpy array.
-        fpath: image name.
+        image_name: image name.
         dir: directory
 
     Returns:
@@ -50,8 +50,9 @@ def savefig(save_flag: bool, img: np.ndarray, fpath: str, dir: str = "image_samp
         :func:`ssc_scoring.mymodules.data_synthesis.SysthesisNewSampled`
 
     """
-    fpath = os.path.join(dir, fpath)
-    print(f'image save path: {fpath}')
+
+    fpath = os.path.join(dir, image_name)
+    # print(f'image save path: {fpath}')
 
     directory = os.path.dirname(fpath)
     if not os.path.isdir(directory):
