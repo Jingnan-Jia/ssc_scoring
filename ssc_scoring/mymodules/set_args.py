@@ -51,7 +51,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--corse_pred_id', help='cascaded validation, must include double quota!',
                         default=None)  # "193_194_276_277" 193_194_276_277
     parser.add_argument('--sampler', choices=(1, 0), help='if customer sampler?', type=int, default=0)
-    parser.add_argument('--sys', choices=(1, 0), help='if synthesis_data?', type=int, default=1)
+    parser.add_argument('--sys', choices=(1, 0), help='if synthesis_data?', type=int, default=0)
     parser.add_argument('--sys_ratio', help='ratio of sys data in the whole data', type=float, default=0.0)
     parser.add_argument('--sys_pro_in_0', help='sys_pro_in_0', type=float, default=0.99)  # must be a float number !
     parser.add_argument('--_ori_weight0', help='_ori_weight0, do not set this value', type=float, default=0.0)
