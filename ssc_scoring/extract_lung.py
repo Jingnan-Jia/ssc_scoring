@@ -82,6 +82,7 @@ def extract(scan_files: Sequence) -> None:
         ct_dia2 = morphology.binary_dilation(ct_neg, np.ones((6, 6, 6))).astype(int)
         ct_lung = largest_connected_parts(ct_dia2, 2)
         ct_ero2 = morphology.binary_erosion(ct_lung, np.ones((6, 6, 6))).astype(int)
+        ct_ero2 = morphology.binary_erosion(ct_ero2, np.ones((3, 3, 3))).astype(int)
 
         save_itk(scan.split('.mha')[0] + '_lung.mha', ct_ero2, ori, sp)
         print('save lung to ', scan.split('.mha')[0] + '_lung.mha')
