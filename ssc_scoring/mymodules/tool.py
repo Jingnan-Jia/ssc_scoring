@@ -95,10 +95,10 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
         :func:`ssc_scoring.run.train` and :func:`ssc_scoring.run_pos.train`
 
     """
-    if not isinstance(modes, list):
-        modes = [modes]
-    else:
+    if modes is None:
         modes = ['train', 'valid', 'test', 'validaug']
+    elif not isinstance(modes, list):
+        modes = [modes]
 
     for mode in modes:
         if mypath.project_name == 'score':
