@@ -7,6 +7,9 @@ import os
 from ssc_scoring.mymodules.confusion_test import confusion
 import myutil.myutil as futil
 from ssc_scoring.compute_metrics import metrics
+import sys
+sys.path.append("..")
+
 # pred_1 = "/data/jjia/ssc_scoring/observer_agreement/16_patients/LKT2_16patients.csv"
 #
 # label_1 = "/data/jjia/ssc_scoring/ground_truth_17_patients.csv" ground_truth_16patients
@@ -32,7 +35,7 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
 
     """
     if run_pos:
-        from mymodules.path import PathPos as Path
+        from ssc_scoring.mymodules.path import PathPos as Path
         label_postfix = "_label"
         pred_postfix = "_pred"
         # ex_ls = [51, 52, 275, 274]
@@ -45,7 +48,7 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
         adap_markersize = False
 
     else:
-        from mymodules.path import PathScore as Path
+        from ssc_scoring.mymodules.path import PathScore as Path
         label_postfix = "_label"
         pred_postfix = "_pred_int_end5"
         # ex_ls = [1585, 1586, 1587, 1588]
