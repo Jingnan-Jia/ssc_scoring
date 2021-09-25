@@ -11,6 +11,7 @@ import time
 from ssc_scoring.mymodules.mydata import LoadScore
 from ssc_scoring.mymodules.set_args import get_args
 from ssc_scoring.mymodules.data_synthesis import savefig
+from scipy.ndimage import morphology
 
 import cv2
 import os
@@ -151,8 +152,10 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
     if not os.path.isdir(occlusion_dir):
         os.makedirs(occlusion_dir)
 
-    lung_mask[lung_mask>0] = 1
-    lung_mask[lung_mask<=0] = 0
+
+    lung_mask = morphology.binary_erosion(lung_mask.numpy(), np.ones((6, 6))).astype(int)
+    lung_mask[lung_mask > 0] = 1
+    lung_mask[lung_mask <= 0] = 0
 
     x = x.to(device)  # shape [channel, w, h]
     net.to(device)
@@ -198,14 +201,14 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         for j in range(nb_ptchs):
             # print(f'i, {i}, j, {j}')
 
-            mask = np.zeros((w, h))
-            mask[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = 1
+            mask_ori = np.zeros((w, h))
+            mask_ori[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = 1
             # print(f"before lung mask, the patch mask sum is {np.sum(mask)}")
-            mask = mask * lung_mask.numpy()  # exclude area outside lung
+            mask_ori = mask_ori * lung_mask # exclude area outside lung
             # print(f"after lung mask, the patch mask sum is {np.sum(mask)}")
 
             # mask[nb_, 0, i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = 1
-            mask = cv2.blur(mask, (5, 5))
+            mask = cv2.blur(mask_ori, (5, 5))
             # new_x = copy.deepcopy(x_np)  # shape [0, 512, 512], avoid changing the original x-np
             tmp = x_np[0] * (1-mask) + x_health * mask
             if save_occ_x:
@@ -261,20 +264,25 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
             #     dif_2 = 0
             # if abs(dif_3) < threshold:
             #     dif_3 = 0
+            # mask[mask>0]=1
+            map_1[mask>0] = dif_1
+            map_2[mask > 0] = dif_2
+            map_3[mask > 0] = dif_3
 
-            map_1[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_1
-            map_2[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_2
-            map_3[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_3
+            # map_1[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_1
+            # map_2[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_2
+            # map_3[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_3
             # t4 = time.time()
 
             # print('t4-t3', t4 - t3)
     x_min = np.min(x_np)
     x_max = np.max(x_np)
-    print(f"x_min: {x_min}, x_max: {x_max}")
+    # print(f"x_min: {x_min}, x_max: {x_max}")
 
     x_np = x_np[0]
     x_np = (x_np - x_min) / (x_max - x_min) * 255
     cv2.imwrite(occlusion_dir + "/ori_img.jpg", x_np)
+    # print(f"ori image saved at {occlusion_dir}")
     y_ls = list(y.numpy())
     # print(y_ls,  '----')
 
@@ -348,10 +356,11 @@ def get_level_dir(img_fpath: str) -> str:
     return file_name[:6]
 
 
-def batch_occlusion(net_id: int, grid_nb: int, img_nb: int):
+def batch_occlusion(net_id: int, grid_nb: int, max_img_nb: int):
 
     args = get_args()  # get argument
-    mypath = Path(id)  # get path
+    args.batch_size=15  # 15/3=5, all 5 levels in the same patient will be loaded in one batch
+    mypath = Path(net_id)  # get path
     print(f"current dir: {os.path.abspath('.')}")  # make sure the current path is 'ssc_scoring'
     label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
     seed = 49  # for split of  cross-validation
@@ -365,9 +374,13 @@ def batch_occlusion(net_id: int, grid_nb: int, img_nb: int):
     net.eval()  # 8
     # print(net)
 
-    for _ in range(img_nb):
-        print(f"nb_img, {_}")
-        data = next(valid_dataloader)  # A list of dict
+    nb_img= 0
+    for data in tqdm(valid_dataloader):
+        nb_img += 1
+        print(f"nb_img, {nb_img}")
+
+        if nb_img> max_img_nb:
+            break
         xs, ys, lung_masks, img_fpaths = data['image_key'], data['label_key'], data['lung_mask_key'], data['fpath_key']
         # [batch, channel, w, h, d]
         idx = 0
@@ -381,9 +394,9 @@ def batch_occlusion(net_id: int, grid_nb: int, img_nb: int):
                 level_dir = get_level_dir(img_fpath)
 
                 occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps', pat_dir, level_dir)
-                occlusion_map(grid_nb, x_, y_, net, lung_mask, occlusion_map_dir)
+                occlusion_map(grid_nb, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False)
 if __name__ == '__main__':
     id = 1658
     grid_nb = 10
-    batch_occlusion(id, grid_nb, img_nb=10000)
+    batch_occlusion(id, grid_nb, max_img_nb=1000)
     print('finish!')
