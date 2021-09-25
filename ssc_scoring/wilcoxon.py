@@ -6,7 +6,7 @@
 # Wilcoxon signed-rank test
 import numpy as np
 import pandas as pd
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon, ttest_ind
 # seed the random number generator
 # seed(1)
 # generate two independent samples
@@ -19,17 +19,23 @@ def main():
 
 	ref_fpath = 'results/models/1405_1404_1411_1410/valid_label.csv'
 
+	data1_fpath = 'results/models_pos/193_194_276_277/valid_pred.csv'
+	data2_fpath = 'results/models_pos/193_194_276_277/valid_label.csv'
+	# ref_fpath = ''
+
 	data1 = pd.read_csv(data1_fpath)
 	data2 = pd.read_csv(data2_fpath)
-	data_ref = pd.read_csv(ref_fpath)
-	data1 = data1 - data_ref
-	data2 = data2 - data_ref
+	# data_ref = pd.read_csv(ref_fpath)
+	# data1 = data1 - data_ref
+	# data2 = data2 - data_ref
 
 	for col in data1.columns:
 		data1_col = data1[col].to_numpy()
 		data2_col = data2[col].to_numpy()
 		assert len(data1_col) == len(data2_col)
 		# compare samples
+		print(ttest_ind(data1_col, data2_col))
+
 		stat, p = wilcoxon(data1_col, data2_col)
 		print(f'{col}: '
 			  f'mean_1: {np.mean(data1_col): .2f}, std_1: {np.std(data1_col): .2f}, '
