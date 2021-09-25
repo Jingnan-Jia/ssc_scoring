@@ -297,7 +297,7 @@ def confusion(label_file: str, pred_file: str, bland_in_1_mean_std=None, adap_ma
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(label, pred)
         x_reference = np.array([0, 256])
         print('linear regression m, b:', m, b)
-        print('linear regression m, b, r^2:', slope, intercept, r_value ** 2)
+        print('linear regression m, b, r^2, p:', slope, intercept, r_value ** 2, p_value)
 
         diff = pred.astype(int) - label.astype(int)
         abs_diff = np.abs(diff)
@@ -310,8 +310,25 @@ def confusion(label_file: str, pred_file: str, bland_in_1_mean_std=None, adap_ma
         ax_2.plot(x_reference, x_reference, '-', color='black', linewidth=1)  # light gray
         # ax_2.text(0.1, 0.7, '---  Regression line',
         #           ha="left", fontsize='large', transform=ax_2.transAxes)
-        ax_2.text(0.1, 0.7, f'--  Regression line\ny = {m:.2f}x + {b:.2f}\nR\N{SUPERSCRIPT TWO} = {r_value ** 2: .2f}',
+        ax_2.text(0.1, 0.6, f'------\n'
+                            f'——\n'
+                            f'y\n'
+                            f'R\N{SUPERSCRIPT TWO}\n'
+                            f'P',
                   ha="left", fontsize='large', transform=ax_2.transAxes)
+        if p_value < 0.01:
+            ax_2.text(0.16, 0.6, f'    Regression line\n'
+                                 f'    Identity line\n'
+                                 f'= {m:.2f}x + {b:.2f}\n'
+                                 f'= {r_value ** 2:.2f}\n'
+                                 f'< 0.01',
+                      ha="left", fontsize='large', transform=ax_2.transAxes)
+        else:
+            ax_2.text(0.16, 0.6, f'Regression line\n'
+                                 f'= {m:.2f}x + {b:.2f}\n'
+                                 f'= {r_value ** 2:.2f}\n'
+                                 f'= {p_value}',
+                      ha="left", fontsize='large', transform=ax_2.transAxes)
         # ax_2.text(0.05, 0.9, 'B)', ha="left", fontsize='xx-large', transform=ax_2.transAxes)
     else:
         for plot_id, column in enumerate(df_label.columns):
