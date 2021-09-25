@@ -58,7 +58,6 @@ def savefig(save_flag: bool, img: np.ndarray, image_name: str, dir: str = "image
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
-
     if save_flag:
         fig, ax = plt.subplots()
         ax.imshow(img, cmap='gray')
@@ -354,7 +353,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
                 fig_ += image
             fig_[fig_ > 0] = 1
 
-            savefig(True, fig_, 'polygonmask' + str(self.counter) + '.png')
+            savefig(True, fig_, str(self.counter) + 'polygonmask.png')
 
         return fig_
 
@@ -372,34 +371,34 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             self.retp_candidate = self._rand_affine_crop(self.retp_temp)
             self.gg_candidate = self._rand_affine_crop(self.gg_temp)
 
-        save_img: bool = True  # If save the synthetic images and the intermediate images
-        savefig(save_img, img, '0_ori_img_' + str(self.counter) + self.mode + '.png')
-        savefig(save_img, self.retp_candidate, '1_retp_candidate_' + str(self.counter) + '.png')
+        save_img: bool = False  # If save the synthetic images and the intermediate images
+        savefig(save_img, img, str(self.counter) + '_0_ori_img_' + self.mode + '.png')
+        savefig(save_img, self.retp_candidate, str(self.counter) + '_1_retp_candidate.png')
 
         while (1):
             rand_retp_mask = self._random_mask(3, type="ellipse")
             rand_gg_mask = self._random_mask(3, type="ellipse")
 
-            savefig(save_img, rand_gg_mask, '2_rand_gg_mask_' + str(self.counter) + '.png')
-            savefig(save_img, rand_retp_mask, '3_rand_retp_mask_' + str(self.counter) + '.png')
-            savefig(save_img, lung_mask, '4_lung_mask_' + str(self.counter) + '.png')
+            savefig(save_img, rand_gg_mask, str(self.counter) + '_2_rand_gg_mask.png')
+            savefig(save_img, rand_retp_mask, str(self.counter) + '_3_rand_retp_mask.png')
+            savefig(save_img, lung_mask, str(self.counter) + '_4_lung_mask.png')
 
             rand_retp_mask *= lung_mask
             rand_gg_mask *= lung_mask
 
-            savefig(save_img, rand_gg_mask, '5_gg_mask_lung_' + str(self.counter) + '.png')
-            savefig(save_img, rand_retp_mask, '6_retp_mask_lung_' + str(self.counter) + '.png')
+            savefig(save_img, rand_gg_mask, str(self.counter) + '_5_gg_mask_lung.png')
+            savefig(save_img, rand_retp_mask, str(self.counter) + '_6_retp_mask_lung.png')
 
             union_mask = rand_gg_mask + rand_retp_mask
             union_mask[union_mask > 0] = 1
 
-            savefig(save_img, union_mask, '7_union_mask_lung_' + str(self.counter) + '.png')
+            savefig(save_img, union_mask, str(self.counter) + '_7_union_mask_lung.png')
 
             intersection_mask = rand_gg_mask * rand_retp_mask
             gg_exclude_retp = rand_gg_mask - intersection_mask
 
-            savefig(save_img, intersection_mask, '8_intersection_mask_lung_' + str(self.counter) + '.png')
-            savefig(save_img, gg_exclude_retp, '9_gg_exclude_retp_' + str(self.counter) + '.png')
+            savefig(save_img, intersection_mask, str(self.counter) + '_8_intersection_mask_lung.png')
+            savefig(save_img, gg_exclude_retp, str(self.counter) + '_9_gg_exclude_retp.png')
 
             # lung_area = np.sum(lung_mask)
             # total_dis_area = np.sum(union_mask)
@@ -413,16 +412,15 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
 
             smooth_edge = self.retp_blur
             rand_retp_mask = cv2.blur(rand_retp_mask, (smooth_edge, smooth_edge))
-            savefig(save_img, rand_retp_mask, '10_retp_mask_blur_' + str(self.counter) + '.png')
+            savefig(save_img, rand_retp_mask, str(self.counter) + '_10_retp_mask_blur.png')
 
             smooth_edge = self.gg_blur
             rand_gg_mask = cv2.blur(rand_gg_mask, (smooth_edge, smooth_edge))
-            savefig(save_img, rand_gg_mask, '11_gg_mask_blur_' + str(self.counter) + '.png')
+            savefig(save_img, rand_gg_mask, str(self.counter) + '_11_gg_mask_blur.png')
 
             smooth_edge = self.gg_blur
             intersection_mask = cv2.blur(intersection_mask, (smooth_edge, smooth_edge))
-            savefig(save_img, intersection_mask,
-                    '11_intersection_mask_blur_' + str(self.counter) + '.png')
+            savefig(save_img, intersection_mask, str(self.counter) + '_11_intersection_mask_blur.png')
 
             rand_retp_mask_cp = copy.deepcopy(rand_retp_mask)  # recalculate scores
             rand_gg_mask_cp = copy.deepcopy(rand_gg_mask)
@@ -456,33 +454,33 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
 
         if np.sum(y) > 0:
             retp = rand_retp_mask * self.retp_candidate
-            savefig(save_img, retp, '12_retp_' + str(self.counter) + '.png')
+            savefig(save_img, retp, str(self.counter) + '_12_retp.png')
 
             img_exclude_retp_mask = (1 - rand_retp_mask) * img
             savefig(save_img, img_exclude_retp_mask,
-                    '13_img_exclude_retp_mask_' + str(self.counter) + '.png')
+                    str(self.counter) + '_13_img_exclude_retp_mask.png')
 
             img_wt_retp = retp + img_exclude_retp_mask
-            savefig(save_img, img_wt_retp, '14_img_wt_retp_' + str(self.counter) + '.png')
+            savefig(save_img, img_wt_retp, str(self.counter) + '_14_img_wt_retp.png')
 
             if self.gen_gg_as_retp:
                 gg = rand_gg_mask * self.gg_candidate
-                savefig(save_img, gg, '12_gg_' + str(self.counter) + '.png')
+                savefig(save_img, gg, str(self.counter) + '_15_gg.png')
 
                 img_exclude_gg_mask = (1 - rand_gg_mask) * img_wt_retp
                 savefig(save_img, img_exclude_gg_mask,
-                        '13_img_exclude_gg_mask_' + str(self.counter) + '.png')
+                        str(self.counter) + '_16_img_exclude_gg_mask.png')
 
                 img_wt_retp_gg = gg + img_exclude_gg_mask
                 savefig(save_img, img_wt_retp_gg,
-                        '14_img_wt_retp_gg_wo_overlap' + str(self.counter) + '.png')
+                        str(self.counter) + '_17_img_wt_retp_gg_wo_overlap.png')
 
                 merge = 0.5 * (intersection_mask * img_wt_retp_gg) + 0.5 * (
                         intersection_mask * img_wt_retp)  # gg + retp
                 final = img_wt_retp_gg * (1 - intersection_mask) + merge
                 y_name = '_'.join([str(y[0]), str(y[1]), str(y[2])])
                 savefig(save_img, final,
-                        '15_img_wt_retp_gg_final_' + str(self.counter) + '_' + y_name + '.png')
+                        str(self.counter) + '_18_img_wt_retp_gg_final_' + y_name + '.png')
 
                 # retp part
 
@@ -491,26 +489,26 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             else:
                 smooth_edge = self.gg_blur
                 rand_gg_mask = cv2.blur(rand_gg_mask, (smooth_edge, smooth_edge))
-                savefig(save_img, rand_gg_mask, '15_gg_mask_blur_' + str(self.counter) + '.png')
+                savefig(save_img, rand_gg_mask, str(self.counter) + '_15_gg_mask_blur.png')
 
                 gg = copy.deepcopy(img_wt_retp)
-                savefig(save_img, gg, '16_gg_candidate_' + str(self.counter) + '.png')
+                savefig(save_img, gg, str(self.counter) + '_16_gg_candidate.png')
 
                 lighter_gg = copy.deepcopy(gg)
                 lighter_gg += self.gg_increase
                 gg = rand_gg_mask * lighter_gg + (1 - rand_gg_mask) * gg
-                savefig(save_img, gg, '17_gg_lighter_' + str(self.counter) + '.png')
+                savefig(save_img, gg, str(self.counter) + '_17_gg_lighter.png')
 
                 gg_blur = 3
                 gg = cv2.blur(gg, (gg_blur, gg_blur))
-                savefig(save_img, gg, '18_gg_lighter_blur_' + str(self.counter) + '.png')
+                savefig(save_img, gg, str(self.counter) + '_18_gg_lighter_blur.png')
 
                 gg = rand_gg_mask * gg
-                savefig(save_img, gg, '19_gg_lighter_blur_smoothed_' + str(self.counter) + '.png')
+                savefig(save_img, gg, str(self.counter) + '_19_gg_lighter_blur_smoothed.png')
 
                 img_exclude_gg_mask = (1 - rand_gg_mask) * img_wt_retp
                 img_wt_retp_gg = img_exclude_gg_mask + gg
-                savefig(save_img, img_wt_retp_gg, '20_img_wt_retp_gg_' + str(self.counter) + '.png')
+                savefig(save_img, img_wt_retp_gg, str(self.counter) + '_20_img_wt_retp_gg.png')
 
             self.counter += 1
             return torch.from_numpy(img_wt_retp_gg.astype(np.float32)), torch.tensor(y.astype(np.float32))
