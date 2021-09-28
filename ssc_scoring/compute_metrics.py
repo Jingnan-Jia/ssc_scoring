@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ssc_scoring.mymodules.confusion_test import confusion
+from ssc_scoring.mymodules.confusion_test import confusion, read_check
 
 
 def metrics(pred_fpath: str, label_fpath: str, bland_in_1: bool, adap_markersize: bool) -> None:
@@ -29,8 +29,10 @@ def metrics(pred_fpath: str, label_fpath: str, bland_in_1: bool, adap_markersize
 
     See :py:mod:`ssc_scoring.mymodules.confusion_test` for more detailed examples.
     """
-    df_label = pd.read_csv(label_fpath)
-    df_pred = pd.read_csv(pred_fpath)
+    # df_label = pd.read_csv(label_fpath)
+    # df_pred = pd.read_csv(pred_fpath)
+    df_label = read_check(file_fpath=label_fpath)
+    df_pred = read_check(file_fpath=pred_fpath)
 
     label_np = df_label.to_numpy()
     pred_np = df_pred.to_numpy()
@@ -45,9 +47,9 @@ def metrics(pred_fpath: str, label_fpath: str, bland_in_1: bool, adap_markersize
 
 
 if __name__ == "__main__":
-    pred_fpath = "/data/jjia/ssc_scoring/observer_agreement/16_patients/LKT2_16patients.csv"
-    # pred_fpath = "/data/jjia/ssc_scoring/1405_16pats_pred.csv"
-    label_fpath = "/data/jjia/ssc_scoring/observer_agreement/16_patients/ground_truth_16patients.csv"
+    pred_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/LKT2_16patients.csv"
+    # pred_fpath = "/data/jjia/ssc_scoring/ssc_scoring/results/models/1405_1404_1411_1410/16pats_pred.csv"
+    label_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/ground_truth_16patients.csv"
     bland_in_1 = False
     adap_markersize = True
     metrics(pred_fpath, label_fpath, bland_in_1, adap_markersize)

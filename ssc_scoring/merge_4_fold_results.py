@@ -107,7 +107,7 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
 
 
 if __name__ == "__main__":
-    run_pos = True
-    ex_ls = [193, 194, 276, 277]
+    run_pos = False
+    ex_ls = [1725, 1726, 1727, 1728]
 
     merge(run_pos, ex_ls)
