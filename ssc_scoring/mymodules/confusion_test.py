@@ -89,7 +89,7 @@ def read_check(file_fpath=None) -> pd.DataFrame:
         del df["ID"]
         del df["Level"]
 
-    if df.columns[0] not in ['L1_pos', 'L1', 'L2', 'L3', 'L4', 'L5', 'disext']:
+    if df.columns[0] not in ['L1_pos', 'L1', 'L2', 'L3', 'L4', 'L5', 'disext', 'TOT']:
         df = pd.read_csv(file_fpath, header=None)
         if len(df.columns) == 5:
             columns = ['L1', 'L2', 'L3', 'L4', 'L5']
@@ -138,7 +138,7 @@ def confusion(label_file: str, pred_file: str, bland_in_1_mean_std=None, adap_ma
         row_nb, col_nb = 1, 1
     else:
         fig = plt.figure(figsize=(15, 4))
-        fig_2 = plt.figure(figsize=(15, 6))
+        fig_2 = plt.figure(figsize=(15, 5))
 
         if len(df_label.columns) == 3:
             row_nb, col_nb = 1, 3
