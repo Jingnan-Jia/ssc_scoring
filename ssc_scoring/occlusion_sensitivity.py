@@ -11,7 +11,10 @@ import time
 from ssc_scoring.mymodules.mydata import LoadScore
 from ssc_scoring.mymodules.set_args import get_args
 from ssc_scoring.mymodules.data_synthesis import savefig
+from ssc_scoring.mymodules.colormap import get_continuous_cmap
+
 from scipy.ndimage import morphology
+import matplotlib.pyplot as plt
 
 import cv2
 import os
@@ -23,7 +26,8 @@ import json
 from ssc_scoring.run import get_net, Path
 from torch.utils.data import Dataset, DataLoader
 import myutil.myutil as futil
-
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda")
 
@@ -46,6 +50,24 @@ def backward_hook(module, grad_in, grad_out):
 # 定义获取特征图的函数
 def farward_hook(module, input, output):
     fmap_block.append(output)
+
+
+def apply_custom_colormap(image_gray, cmap=plt.get_cmap('seismic')):
+
+    assert image_gray.dtype == np.uint8, 'must be np.uint8 image'
+    if image_gray.ndim == 3: image_gray = image_gray.squeeze(-1)
+
+    # Initialize the matplotlib color map
+    sm = plt.cm.ScalarMappable(cmap=cmap)
+
+    # Obtain linear color range
+    color_range = sm.to_rgba(np.linspace(0, 1, 256))[:,0:3]    # color range RGBA => RGB
+    color_range = (color_range*255.0).astype(np.uint8)         # [0,1] => [0,255]
+    color_range = np.squeeze(np.dstack([color_range[:,2], color_range[:,1], color_range[:,0]]), 0)  # RGB => BGR
+
+    # Apply colormap for each channel individually
+    channels = [cv2.LUT(image_gray, color_range[:,i]) for i in range(3)]
+    return np.dstack(channels)
 
 
 def cam_show_img(img, feature_map, grads, out_dir, idx):
@@ -252,9 +274,9 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
             out_2 = out_np[0, 1]
             out_3 = out_np[0, 2]
 
-            dif_1 = np.rint(out_1 - out_ori_1)  # use np.rint to ignore the random noise
-            dif_2 = np.rint(out_2 - out_ori_2)
-            dif_3 = np.rint(out_3 - out_ori_3)
+            dif_1 = out_1 - out_ori_1  # use np.rint to ignore the random noise
+            dif_2 = out_2 - out_ori_2
+            dif_3 = out_3 - out_ori_3
             # print(f"out_1: {np.rint(out_1)}, out_2: {np.rint(out_2)}, out_3: {np.rint(out_3)}, "
             #       f"dif_1: {dif_1}, dif_2: {dif_2}, dif_3: {dif_3}")
             # threshold = 3  # mae difference greater than 3 is regarded valuable
@@ -288,16 +310,33 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
 
     # for nb, mp_1, mp_2, mp_3 in zip(range(nb_img), map_1, map_2, map_3):  # per CT
     for map, lb, score in zip([map_1, map_2, map_3], ['disext', 'gg', 'rept'], y_ls):  # per label
-        map = normalize_255(map)  # values range from 0 to 255
-        map_mae = copy.deepcopy(map)
+
+        # map_mae = copy.deepcopy(map)
+
+        map_mae = normalize_255(-map, max_dif=2, min_dif=-2)
+        # print(f'map_mae: {map_mae}')
+
         # map_mae[map_mae < 0] = 0
         # map_mae[map_mae == 0] = 127.5
         # map_mae[map_mae > 0] = 255
-        hm = cv2.applyColorMap(np.uint8(map_mae), cv2.COLORMAP_JET)
-        img_with_map_mae_dif = 0.3 * hm + 0.7 * x_np.reshape(w, h, 1)
-        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_" + str(score) + "_mae_diff.jpg"),
-                    img_with_map_mae_dif)
+        cmp = get_continuous_cmap(hex_list = ['#0600E8', '030B57', '#000000','514B15', '#FFE200'])
+        # plt.get_cmap('twilight')
+        hm = apply_custom_colormap(np.uint8(map_mae), cmap=cmp)
+        # print(f'before, map_hm: {hm}')
 
+        # hm[map==0] = np.array([0,0,0])
+        # hm = cv2.applyColorMap(np.uint8(map_mae), cv2.COLORMAP_JET)
+        # print(f'after, map_hm: {hm}')
+        map_mask = copy.deepcopy(map).reshape(w, h, 1)
+        map_mask[map!=0] = 1
+        img_with_map_mae_dif = 0.4 * hm + 0.6 * x_np.reshape(w, h, 1)
+        temp1 = img_with_map_mae_dif * map_mask
+        temp2 = x_np.reshape(w, h, 1) * (1-map_mask)
+        saved_map = temp1 + temp2
+        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_" + str(score) + "_mae_diff.jpg"),
+                    saved_map)
+
+        map = normalize_255(map, max_dif=5, min_dif=-5)  # values range from 0 to 255
         map_mae_higher = copy.deepcopy(map)
         map_mae_higher[map_mae_higher <= 127.5] = 0  # make these pixels black
         # map_mae_higher[map_mae_higher > 127.5] = 255
@@ -320,7 +359,7 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         # print('finish {} of 3')
 
 
-def normalize_255(occlusion_map: np.ndarray):
+def normalize_255(occlusion_map: np.ndarray, max_dif = None, min_dif = None):
     """occlusion_map is the difference between two times of predictions.
     Rescale the map to [0, 255] for show
 
@@ -330,8 +369,10 @@ def normalize_255(occlusion_map: np.ndarray):
     Returns:
 
     """
-    min_dif = np.min(occlusion_map)
-    max_dif = np.max(occlusion_map)
+    if max_dif is None:
+        min_dif = np.min(occlusion_map)
+    if min_dif is None:
+        max_dif = np.max(occlusion_map)
 
     abs_min_dif = abs(min_dif)
     abs_max_dif = abs(max_dif)
@@ -342,6 +383,7 @@ def normalize_255(occlusion_map: np.ndarray):
     occlusion_map = (occlusion_map - min_dif) / (max_dif - min_dif) * 255
     occlusion_map[occlusion_map>255] = 255
     occlusion_map[occlusion_map<0] = 0
+
     return occlusion_map
 
 
@@ -395,6 +437,8 @@ def batch_occlusion(net_id: int, grid_nb: int, max_img_nb: int):
 
                 occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps', pat_dir, level_dir)
                 occlusion_map(grid_nb, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False)
+
+
 if __name__ == '__main__':
     id = 1658
     grid_nb = 10
