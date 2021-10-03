@@ -19,17 +19,24 @@ def main():
 
 	ref_fpath = 'results/models/1405_1404_1411_1410/valid_label.csv'
 
-	data1_fpath = 'results/models_pos/193_194_276_277/valid_pred.csv'
-	data2_fpath = 'results/models_pos/193_194_276_277/valid_label.csv'
+	# data1_fpath = 'results/models_pos/193_194_276_277/valid_pred.csv'
+	# data2_fpath = 'results/models_pos/193_194_276_277/valid_label.csv'
 	# ref_fpath = ''
+	data1_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/AST2_16patients.csv"
+	data2_fpath = "/data/jjia/ssc_scoring/ssc_scoring/results/models/1405_1404_1411_1410/16pats_pred.csv"
+
+	ref_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/ground_truth_16patients.csv"
 
 	data1 = pd.read_csv(data1_fpath)
 	data2 = pd.read_csv(data2_fpath)
-	# data_ref = pd.read_csv(ref_fpath)
-	# data1 = data1 - data_ref
-	# data2 = data2 - data_ref
+	data_ref = pd.read_csv(ref_fpath)
+
+	data1 = data1 - data_ref
+	data2 = data2 - data_ref
 
 	for col in data1.columns:
+		if col in ['ID', 'Level']:
+			continue
 		data1_col = data1[col].to_numpy()
 		data2_col = data2[col].to_numpy()
 		assert len(data1_col) == len(data2_col)
