@@ -7,6 +7,7 @@ sys.path.append("..")
 from monai.transforms import ScaleIntensityRange
 from tqdm import tqdm
 import copy
+import math
 import time
 from ssc_scoring.mymodules.mydata import LoadScore
 from ssc_scoring.mymodules.set_args import get_args
@@ -158,10 +159,12 @@ def generate_candidate(fpath: str, image_size: int = 512):
     return temp
 
 
-def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_occ_x=False):  # for one image
+def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, save_occ_x=False, stride=None,
+                  map_2_w=None):  # for one image
     """Save occlusion map to disk.
 
     Args:
+        patch_size: patch side lenth
         x: image to be predicted, shape [channel, w, h]
         y: predicted scores, shape [1, 3]
         net: network
@@ -175,7 +178,8 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         os.makedirs(occlusion_dir)
 
 
-    lung_mask = morphology.binary_erosion(lung_mask.numpy(), np.ones((6, 6))).astype(int)
+    # lung_mask = morphology.binary_erosion(lung_mask.numpy(), np.ones((6, 6))).astype(int)
+    lung_mask = lung_mask.numpy()
     lung_mask[lung_mask > 0] = 1
     lung_mask[lung_mask <= 0] = 0
 
@@ -205,6 +209,10 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
     map_2 = np.zeros((w, h))
     map_3 = np.zeros((w, h))
 
+    map_1_w = np.zeros((w, h))
+    map_2_w = np.zeros((w, h))
+    map_3_w = np.zeros((w, h))
+
     # # why do we need the following code?
     # x_mean = np.mean(x_np, axis=(1, 2, 3))  # (10, 1)
     # x_std = np.std(x_np, axis=(1, 2, 3))
@@ -217,14 +225,15 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
     # print(f"sum of lung mask: {np.sum(lung_mask.numpy())}")
     savefig(True, lung_mask, 'lung_mask.png', occlusion_dir)
 
-    nb_ptchs = grid_nb
-    ptch = int(512 / nb_ptchs)
-    for i in tqdm(range(nb_ptchs)):
-        for j in range(nb_ptchs):
+    nb_ptchs = math.ceil(512 / patch_size)
+    ptch = patch_size
+    i, j = 0, 0  # row index, column index
+    while i < 512:
+        while j < 512:
             # print(f'i, {i}, j, {j}')
 
             mask_ori = np.zeros((w, h))
-            mask_ori[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = 1
+            mask_ori[i : i + ptch, j: j + ptch] = 1
             # print(f"before lung mask, the patch mask sum is {np.sum(mask)}")
             mask_ori = mask_ori * lung_mask # exclude area outside lung
             # print(f"after lung mask, the patch mask sum is {np.sum(mask)}")
@@ -238,10 +247,10 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
 
                 tmp2 = copy.deepcopy(tmp)
                 edge = 5
-                tmp2[i * ptch: i * ptch + edge, j * ptch: (j + 1) * ptch] = 1
-                tmp2[(i +1) * ptch - edge: (i +1) * ptch, j * ptch: (j + 1) * ptch] = 1
-                tmp2[i * ptch: (i +1) * ptch, j * ptch: j * ptch + edge] = 1
-                tmp2[i * ptch: (i +1) * ptch, (j+1) * ptch - edge: (j+1) * ptch] = 1
+                tmp2[i : i + edge, j : j + ptch] = 1
+                tmp2[i + ptch - edge: i + ptch, j: j + ptch] = 1
+                tmp2[i : i + ptch, j : j + edge] = 1
+                tmp2[i : i + ptch, j+ ptch - edge: j+ ptch] = 1
 
 
                 savefig(True, tmp2, str(i) + '_' + str(j) + '_occlusion_x_contour.png', occlusion_dir)
@@ -273,6 +282,7 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
             out_1 = out_np[0, 0]  # scalar
             out_2 = out_np[0, 1]
             out_3 = out_np[0, 2]
+            # print(f'out1: {out_1}')
 
             dif_1 = out_1 - out_ori_1  # use np.rint to ignore the random noise
             dif_2 = out_2 - out_ori_2
@@ -287,16 +297,35 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
             # if abs(dif_3) < threshold:
             #     dif_3 = 0
             # mask[mask>0]=1
-            map_1[mask>0] = dif_1
-            map_2[mask > 0] = dif_2
-            map_3[mask > 0] = dif_3
-
+            map_1[mask_ori > 0] += dif_1
+            map_2[mask_ori > 0] += dif_2
+            map_3[mask_ori > 0] += dif_3
+            # print(f'sum of dif_1: {np.sum(dif_1)}')
+            # print(f'sum of map1: {np.sum(map_1)}')
+            map_1_w[mask_ori > 0] += 1
+            map_2_w[mask_ori > 0] += 1
+            map_3_w[mask_ori > 0] += 1
+            j += stride
+        i += stride
+        j = 0
+        # print(f'i: {i}')
             # map_1[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_1
             # map_2[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_2
             # map_3[i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = dif_3
             # t4 = time.time()
 
             # print('t4-t3', t4 - t3)
+    # print(f'sum of map1: {sum(map_1)}')
+
+    map_1_w[map_1_w==0] = 1
+    map_2_w[map_2_w==0] = 1
+    map_3_w[map_3_w==0] = 1
+
+    map_1 = map_1 / map_1_w
+    map_2 = map_2 / map_2_w
+    map_3 = map_3 / map_3_w
+
+
     x_min = np.min(x_np)
     x_max = np.max(x_np)
     # print(f"x_min: {x_min}, x_max: {x_max}")
@@ -306,20 +335,23 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
     cv2.imwrite(occlusion_dir + "/ori_img.jpg", x_np)
     # print(f"ori image saved at {occlusion_dir}")
     y_ls = list(y.numpy())
+    pred_ls = list(out_np.reshape(-1,))
     # print(y_ls,  '----')
 
     # for nb, mp_1, mp_2, mp_3 in zip(range(nb_img), map_1, map_2, map_3):  # per CT
-    for map, lb, score in zip([map_1, map_2, map_3], ['disext', 'gg', 'rept'], y_ls):  # per label
+    for map, lb, score, pred in zip([map_1, map_2, map_3], ['disext', 'gg', 'rept'], y_ls, pred_ls):  # per label
 
         # map_mae = copy.deepcopy(map)
 
-        map_mae = normalize_255(-map, max_dif=2, min_dif=-2)
+        map_mae = normalize_255(-map, max_dif=4, min_dif=-4)
         # print(f'map_mae: {map_mae}')
 
         # map_mae[map_mae < 0] = 0
         # map_mae[map_mae == 0] = 127.5
         # map_mae[map_mae > 0] = 255
-        cmp = get_continuous_cmap(hex_list = ['#0600E8', '030B57', '#000000','514B15', '#FFE200'])
+        # ['#4D08ED', '270477', '#000000','EDD607', '#ED0707']
+        # []
+        cmp = get_continuous_cmap(hex_list = ['#220FEC', '40C2BF', '#000000','E1D015', '#ED0707'])
         # plt.get_cmap('twilight')
         hm = apply_custom_colormap(np.uint8(map_mae), cmap=cmp)
         # print(f'before, map_hm: {hm}')
@@ -329,11 +361,11 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         # print(f'after, map_hm: {hm}')
         map_mask = copy.deepcopy(map).reshape(w, h, 1)
         map_mask[map!=0] = 1
-        img_with_map_mae_dif = 0.4 * hm + 0.6 * x_np.reshape(w, h, 1)
+        img_with_map_mae_dif = 0.3 * hm + 0.7 * x_np.reshape(w, h, 1)
         temp1 = img_with_map_mae_dif * map_mask
         temp2 = x_np.reshape(w, h, 1) * (1-map_mask)
         saved_map = temp1 + temp2
-        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_" + str(score) + "_mae_diff.jpg"),
+        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_" + str(score) + "_pred_" + str(pred) + "_mae_diff.jpg"),
                     saved_map)
 
         map = normalize_255(map, max_dif=5, min_dif=-5)  # values range from 0 to 255
@@ -343,7 +375,12 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         # map_mae_higher = normalize_255(map_mae_higher)
         map_mae_higher = cv2.applyColorMap(np.uint8(map_mae_higher), cv2.COLORMAP_JET)
         img_with_map_mae_higher = 0.3 * map_mae_higher + 0.7 * x_np.reshape(w, h, 1)
-        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_"+str(score)+"_mae_higher.jpg"),
+
+        temp1 = img_with_map_mae_higher * map_mask
+        temp2 = x_np.reshape(w, h, 1) * (1 - map_mask)
+        img_with_map_mae_higher = temp1 + temp2
+
+        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_"+str(score)+"_pred_" + str(pred) + "_mae_higher.jpg"),
                     img_with_map_mae_higher)
 
 
@@ -354,7 +391,12 @@ def occlusion_map(grid_nb, x, y, net, lung_mask=None, occlusion_dir=None, save_o
         # map_mae_lower = normalize_255(map_mae_lower)
         map_mae_lower = cv2.applyColorMap(np.uint8(map_mae_lower), cv2.COLORMAP_JET)
         img_with_map_mae_lower = 0.3 * map_mae_lower + 0.7 * x_np.reshape(w, h, 1)
-        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_"+str(score)+"_mae_lower.jpg"),
+
+        temp1 = img_with_map_mae_lower * map_mask
+        temp2 = x_np.reshape(w, h, 1) * (1 - map_mask)
+        img_with_map_mae_lower = temp1 + temp2
+
+        cv2.imwrite(os.path.join(occlusion_dir, lb+"_ori_label_"+str(score)+ "_pred_" + str(pred) + "_mae_lower.jpg"),
                     img_with_map_mae_lower)
         # print('finish {} of 3')
 
@@ -398,7 +440,7 @@ def get_level_dir(img_fpath: str) -> str:
     return file_name[:6]
 
 
-def batch_occlusion(net_id: int, grid_nb: int, max_img_nb: int):
+def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int):
 
     args = get_args()  # get argument
     args.batch_size=15  # 15/3=5, all 5 levels in the same patient will be loaded in one batch
@@ -434,13 +476,15 @@ def batch_occlusion(net_id: int, grid_nb: int, max_img_nb: int):
                 # grad_cam(x, y, net, nb_img)
                 pat_dir = get_pat_dir(img_fpath)
                 level_dir = get_level_dir(img_fpath)
-
+                # if 'Pat_135' not in pat_dir:
+                #     continue
                 occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps', pat_dir, level_dir)
-                occlusion_map(grid_nb, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False)
+                occlusion_map(patch_size, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False, stride=patch_size//4)
 
 
 if __name__ == '__main__':
     id = 1658
-    grid_nb = 10
-    batch_occlusion(id, grid_nb, max_img_nb=1000)
+    patch_size = 64
+    # grid_nb = 10
+    batch_occlusion(id, patch_size, max_img_nb=1000)
     print('finish!')
