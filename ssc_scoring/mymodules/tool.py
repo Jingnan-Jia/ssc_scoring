@@ -50,19 +50,25 @@ def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
     class_sample_count = np.array([len(np.where(disext_np == t)[0]) for t in disext_unique])
     if sys_ratio:
         weight = 1 / class_sample_count
+        weight_sum = np.sum(weight)
+        weight = np.array([w / weight_sum for w in weight])  # normalize the sum of weights to 1
+        weight = (1 - sys_ratio) * weight  # scale the sume of weights to (1-sys_ratio)
+        idx_0 = disext_unique_list.index(0)
+        weight[idx_0] += sys_ratio
+        sys_ratio_in_0 = sys_ratio / weight[idx_0]
+
         print("class_sample_count", class_sample_count)
         print("unique_disext", disext_unique_list)
         print("original weight", weight)
 
-        idx_0 = disext_unique_list.index(0)
-        weight[idx_0] += 20 * weight[idx_0]
+        # weight[idx_0] += 20 * weight[idx_0]
         # samples_weight = np.array([weight[disext_unique_list.index(t)] for t in disext_np])
-
+        #
         # weight_0 = sys_ratio + (1-sys_ratio)/21  # weight for category of 0, which is for original 0 and sys 0
         # weight_others = 1 - weight_0  # weight for other categories
         # # weight = [weight_0, *weight_others]
         # samples_weight = np.array([weight_0 if t==0 else weight_others for t in disext_np])
-        print("weight: ", weight)
+        # print("weight: ", weight)
         # print(samples_weight)
     else:
         weight = 1. / class_sample_count
@@ -74,8 +80,10 @@ def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
     samples_weight = torch.from_numpy(samples_weight)
     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
     print(list(sampler))
-    return sampler
-
+    if sys_ratio:
+        return sampler, sys_ratio_in_0
+    else:
+        return sampler
 
 def compute_metrics(mypath: Union[PathScore, PathPos],
                     mypath2: Union[PathScore, PathPos] = None,

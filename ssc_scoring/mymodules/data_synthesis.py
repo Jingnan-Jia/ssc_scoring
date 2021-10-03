@@ -203,7 +203,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.random_affine = RandomAffine(degrees=180, translate=(0.1, 0.1), scale=(1 - 0.5, 1 + 0.1))
         self.center_crop = CenterCrop(self.image_size)
 
-        self.sys_pro = sys_pro_in_0 if sys_pro_in_0 else 20 / 21  # todo: explain it
+        self.sys_pro_in_0 = sys_pro_in_0
 
         self.mode = mode
         self.retp_fpath = retp_fpath  # retp will generated from its egg
@@ -291,7 +291,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
 
         if d['label_key'][0].item() == 0:  # Possible for synthesis
             tmp = random.random()
-            if tmp < self.sys_pro:  # Do synthesis
+            if tmp < self.sys_pro_in_0:  # Do synthesis
                 with train_lock:
                     sys_nb.value += 1
                     print("sys_nb: " + str(sys_nb.value))

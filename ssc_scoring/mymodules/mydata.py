@@ -317,6 +317,14 @@ class LoadScore(LoaderInit):
                                          pin_memory=True)
             return all_loader
 
+        if not self.sampler:
+            sampler = None
+        else:
+            if self.sys_ratio:
+                sampler, self.args.sys_ratio_in_0 = sampler_by_disext(tr_y, self.sys_ratio)
+            else:
+                sampler = sampler_by_disext(tr_y)
+
         tr_dataset = SynDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args),
                                 synthesis=self.sys, require_lung_mask=self.require_lung_mask)
         vd_data_aug = SynDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args),
@@ -325,7 +333,8 @@ class LoadScore(LoaderInit):
                                 synthesis=False, require_lung_mask=self.require_lung_mask)  # valid original data, without synthetic images
         ts_dataset = SynDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args),
                                 synthesis=False, require_lung_mask=self.require_lung_mask)  # test original data, without synthetic images
-        sampler = sampler_by_disext(tr_y, self.sys_ratio) if self.sampler else None
+
+
         print(f'sampler is {sampler}')
         tr_shuffle = True if sampler is None else False
         train_dataloader = DataLoader(tr_dataset, batch_size=self.batch_size, shuffle=tr_shuffle, num_workers=self.workers,
