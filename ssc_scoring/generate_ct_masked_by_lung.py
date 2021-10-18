@@ -27,6 +27,9 @@ def main():
     assert len(ct_fpath) == len(lu_fpath) == len(pos)
 
     for pos, ct_f, lu_f in zip(pos.iterrows(), ct_fpath, lu_fpath):
+        # if 'Pat_135' not in ct_f:
+        #     continue
+        print('start process ...', ct_f)
         index, po = pos
         ct_f: str
         lu_f: str
