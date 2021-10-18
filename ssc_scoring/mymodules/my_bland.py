@@ -214,14 +214,14 @@ def mean_diff_plot(m1, m2,
         offset = (limitOfAgreementRange / 100.0) * 1.5
 
         ax.text(0.98, mean_diff + offset, 'Mean', ha="right", va="bottom", transform=trans, fontsize='large')
-        ax.text(0.98, mean_diff - offset, f'{mean_diff:.2f}', ha="right", va="top", transform=trans, fontsize='large')
+        ax.text(0.98, mean_diff - (2*offset), f'{mean_diff:.2f}', ha="right", va="top", transform=trans, fontsize='large')
 
         ax.text(0.98, mean_diff + (sd_limit * std_diff) + offset, f'+{sd_limit:.2f} SD', ha="right", va="bottom",
                 transform=trans, fontsize='large')
-        ax.text(0.98, mean_diff + (sd_limit * std_diff) - offset, f'{mean_diff + sd_limit * std_diff:.2f}', ha="right", va="top",
+        ax.text(0.98, mean_diff + (sd_limit * std_diff) - (2*offset), f'{mean_diff + sd_limit * std_diff:.2f}', ha="right", va="top",
                 transform=trans, fontsize='large')
 
-        ax.text(0.98, mean_diff - (sd_limit * std_diff) - offset, f'-{sd_limit:.2f} SD', ha="right", va="top",
+        ax.text(0.98, mean_diff - (sd_limit * std_diff) - (2* offset), f'-{sd_limit:.2f} SD', ha="right", va="top",
                 transform=trans, fontsize='large')
         ax.text(0.98, mean_diff - (sd_limit * std_diff) + offset, f'{mean_diff - sd_limit * std_diff:.2f}', ha="right", va="bottom",
                 transform=trans, fontsize='large')
@@ -229,10 +229,10 @@ def mean_diff_plot(m1, m2,
 
 
     if ynotdiff:
-        ax.set_ylabel('Prediction (%)', fontsize=15)
+        ax.set_ylabel('L&S-Net scores (%)', fontsize=15)
         ax.set_xlabel('Reference (%)', fontsize=15)
     else:
-        ax.set_ylabel('Prediction - Reference (%)', fontsize=15)
+        ax.set_ylabel('L&S-Net scores - Reference (%)', fontsize=15)
         ax.set_xlabel('Average (%)', fontsize=15)
     ax.tick_params(labelsize=13)
     fig.tight_layout()
