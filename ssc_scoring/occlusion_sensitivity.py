@@ -159,7 +159,7 @@ def generate_candidate(fpath: str, image_size: int = 512):
     return temp
 
 
-def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, save_occ_x=False, stride=None,
+def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, save_occ_x=False, stride=None,occ_status='healthy',
                   map_2_w=None):  # for one image
     """Save occlusion map to disk.
 
@@ -217,15 +217,17 @@ def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, sav
     # x_mean = np.mean(x_np, axis=(1, 2, 3))  # (10, 1)
     # x_std = np.std(x_np, axis=(1, 2, 3))
 
-
-    health_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/healthy/healthy.mha"
-    x_health = generate_candidate(health_fpath)  # the healthy image is filled by healthy patches
+    if occ_status=='healthy':
+        occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/healthy/healthy.mha"
+    elif occ_status=='diseased':
+        occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/diseased/diseased.mha"
+    occ_patch = generate_candidate(occ_seed)  # the healthy image is filled by healthy patches
 
     # print(f'x_np.mean: {x_mean}, x_np.std: {x_std}, ')
     # print(f"sum of lung mask: {np.sum(lung_mask.numpy())}")
     savefig(True, lung_mask, 'lung_mask.png', occlusion_dir)
 
-    nb_ptchs = math.ceil(512 / patch_size)
+    # nb_ptchs = math.ceil(512 / patch_size)
     ptch = patch_size
     i, j = 0, 0  # row index, column index
     while i < 512:
@@ -241,7 +243,7 @@ def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, sav
             # mask[nb_, 0, i * ptch: (i + 1) * ptch, j * ptch: (j + 1) * ptch] = 1
             mask = cv2.blur(mask_ori, (5, 5))
             # new_x = copy.deepcopy(x_np)  # shape [0, 512, 512], avoid changing the original x-np
-            tmp = x_np[0] * (1-mask) + x_health * mask
+            tmp = x_np[0] * (1-mask) + occ_patch * mask
             if save_occ_x:
                 savefig(True, tmp, str(i) + '_' + str(j) + '_occlusion_x.png', occlusion_dir)
 
@@ -440,7 +442,7 @@ def get_level_dir(img_fpath: str) -> str:
     return file_name[:6]
 
 
-def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int):
+def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int, occ_status='healthy'):
 
     args = get_args()  # get argument
     args.batch_size=15  # 15/3=5, all 5 levels in the same patient will be loaded in one batch
@@ -478,13 +480,14 @@ def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int):
                 level_dir = get_level_dir(img_fpath)
                 # if 'Pat_135' not in pat_dir:
                 #     continue
-                occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps', pat_dir, level_dir)
-                occlusion_map(patch_size, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False, stride=patch_size//4)
+                occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps_occ_by' + occ_status, pat_dir, level_dir)
+                occlusion_map(patch_size, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False, stride=patch_size//4, occ_status=occ_status)
 
 
 if __name__ == '__main__':
+    occ_status = 'diseased' # 'diseased' or 'healthy'
     id = 1658
     patch_size = 64
     # grid_nb = 10
-    batch_occlusion(id, patch_size, max_img_nb=1000)
+    batch_occlusion(id, patch_size, max_img_nb=1000, occ_status=occ_status)
     print('finish!')
