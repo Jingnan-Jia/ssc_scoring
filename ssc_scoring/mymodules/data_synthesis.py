@@ -353,7 +353,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
                 fig_ += image
             fig_[fig_ > 0] = 1
 
-            savefig(True, fig_, str(self.counter) + 'polygonmask.png')
+            # savefig(True, fig_, str(self.counter) + 'polygonmask.png')
 
         return fig_
 
