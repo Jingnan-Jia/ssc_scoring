@@ -49,6 +49,11 @@ class LoaderInit(ABC):
                            49, 57, 58, 59, 60, 62, 64, 66, 68, 70, 83, 116, 117, 118, 128, 134, 137,
                            144, 158, 187, 189, 194, 196, 206, 210, 216, 230, 236, 238]
 
+        elif self.ts_level_nb == 250:  # 50 patients
+            self.ts_id = [7, 9, 11, 12, 16, 19, 20, 21, 26, 28, 29, 35, 36, 37, 40, 46, 47, 49,
+                          57, 58, 59, 60, 62, 66, 68, 77, 83, 116, 117, 118, 128, 134, 137, 140, 144,
+                          149, 158, 170, 179, 187, 189, 196, 203, 206, 209, 210, 216, 227, 238, 263]
+
         else:
             raise Exception('please use correct testing dataset')
         self.level_node = level_node
@@ -311,7 +316,8 @@ class LoadScore(LoaderInit):
         if merge != 0:
             all_x = [*tr_x, *vd_x, *ts_x]
             all_y = [*tr_y, *vd_y, *ts_y]
-            all_dataset = SynDataset(all_x, all_y, transform=self.xformd("valid", synthesis=self.sys, args=self.args),
+            all_dataset = SynDataset(all_x, all_y, transform=self.xformd("valid", synthesis=self.sys, args=self.args,
+                                                                         require_lung_mask=self.require_lung_mask, tr_x=tr_x),
                                      synthesis=False)
             all_loader = DataLoader(all_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.workers,
                                          pin_memory=True)
@@ -325,13 +331,13 @@ class LoadScore(LoaderInit):
             else:
                 sampler = sampler_by_disext(tr_y)
 
-        tr_dataset = SynDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args),
+        tr_dataset = SynDataset(tr_x, tr_y, transform=self.xformd("train", synthesis=self.sys, args=self.args, tr_x=tr_x),
                                 synthesis=self.sys, require_lung_mask=self.require_lung_mask)
-        vd_data_aug = SynDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args),
+        vd_data_aug = SynDataset(vd_x, vd_y, transform=self.xformd("validaug", synthesis=self.sys, args=self.args, tr_x=tr_x),
                                  synthesis=self.sys, require_lung_mask=self.require_lung_mask)
-        vd_dataset = SynDataset(vd_x, vd_y, transform=self.xformd("valid", synthesis=False, args=self.args),
+        vd_dataset = SynDataset(vd_x, vd_y, transform=self.xformd("valid", synthesis=False, args=self.args, tr_x=tr_x),
                                 synthesis=False, require_lung_mask=self.require_lung_mask)  # valid original data, without synthetic images
-        ts_dataset = SynDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args),
+        ts_dataset = SynDataset(ts_x, ts_y, transform=self.xformd("test", synthesis=False, args=self.args, tr_x=tr_x),
                                 synthesis=False, require_lung_mask=self.require_lung_mask)  # test original data, without synthetic images
 
 
