@@ -179,7 +179,8 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
                  gg_blur,
                  sampler,
                  gen_gg_as_retp,
-                 gg_increase
+                 gg_increase,
+                 tr_x
                  ):
         """Synthesis new image samples.
 
@@ -204,6 +205,7 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.center_crop = CenterCrop(self.image_size)
 
         self.sys_pro_in_0 = sys_pro_in_0
+        self.tr_x = tr_x
 
         self.mode = mode
         self.retp_fpath = retp_fpath  # retp will generated from its egg
@@ -214,8 +216,8 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         self.gen_gg_as_retp = gen_gg_as_retp
         self.gg_increase = gg_increase
 
-        self.ret_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
-        self.gg_eggs_fpath = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
+        self.ret_eggs_fpath = self._filter_egg_fpaths_for_train('ret')
+        self.gg_eggs_fpath = self._filter_egg_fpaths_for_train('gg')
 
         self.retp_temp = self._generate_candidate(self.ret_eggs_fpath)
         self.gg_temp = self._generate_candidate(self.gg_eggs_fpath)
@@ -231,6 +233,28 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
             self.label_numbers = validaug_label_numbers
         else:
             raise Exception("mode is wrong for synthetic data", self.mode)
+
+    def _filter_egg_fpaths_for_train(self, pattern='gg'):
+        if pattern=='gg':
+            egg_fpaths = glob.glob(os.path.join(os.path.dirname(self.gg_fpath), 'gg_*from*.mha'))
+        elif pattern=='ret':
+            egg_fpaths = glob.glob(os.path.join(os.path.dirname(self.retp_fpath), 'ret_*from*.mha'))
+        else:
+            raise Exception(f'pattern should be ret or gg, but is {pattern}')
+        tr_pat_ids = set([x_path.split('Pat_')[-1][:3] for x_path in self.tr_x])
+
+        # train_egg_fpaths = []
+        # for egg_fpath in egg_fpaths:
+        #     pat_id = egg_fpath.split('pat')[-1][:3]
+        #     print(f"tr_pat_ids: {tr_pat_ids}")
+        #     if pat_id in tr_pat_ids:
+        #         print(f"this pat_id {pat_id} from path {egg_fpath} is from training dataset, use it.")
+        #         train_egg_fpaths.append(egg_fpath)
+        #     else:
+        #         print(f"this pat_id {pat_id} from path {egg_fpath} is not from training dataset, give up it.")
+                
+        return egg_fpaths
+
 
     def _generate_candidate(self, eggs_fpath):
         # ori_image_fpath = fpath.split('.mha')[0] + '_ori.mha'
