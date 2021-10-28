@@ -229,11 +229,11 @@ def mean_diff_plot(m1, m2,
 
 
     if ynotdiff:
-        ax.set_ylabel('L&S-Net scores (%)', fontsize=15)
-        ax.set_xlabel('Reference (%)', fontsize=15)
+        ax.set_ylabel('Prediction (slice number)', fontsize=15)
+        ax.set_xlabel('Reference (slice number)', fontsize=15)
     else:
-        ax.set_ylabel('L&S-Net scores - Reference (%)', fontsize=15)
-        ax.set_xlabel('Average (%)', fontsize=15)
+        ax.set_ylabel('Prediction - Reference (slices)', fontsize=15)
+        ax.set_xlabel('Average (slice number)', fontsize=15)
     ax.tick_params(labelsize=13)
     fig.tight_layout()
     return fig
