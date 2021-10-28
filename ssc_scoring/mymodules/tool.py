@@ -21,7 +21,7 @@ from ssc_scoring.mymodules.confusion_test import confusion
 from ssc_scoring.mymodules.path import PathScoreInit, PathPosInit, PathScore, PathPos
 
 
-def sampler_by_disext(tr_y, sys_ratio=0.8) -> WeightedRandomSampler:
+def sampler_by_disext(tr_y, sys_ratio=None) -> WeightedRandomSampler:
     """Balanced sampler according to score distribution of disext.
 
     Args:
