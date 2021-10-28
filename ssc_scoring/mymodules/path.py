@@ -130,7 +130,7 @@ class PathPos(Path, PathPosInit):
         if resample_z == 0:  # use original images
             res_dir: str = 'SSc_DeepLearning'
         elif resample_z == 256:
-            res_dir = 'LowResolution_fix_size'
+            res_dir = 'LowRes256_256_256'
         elif resample_z == 512:
             res_dir = 'LowRes512_192_192'
         elif resample_z == 800:
