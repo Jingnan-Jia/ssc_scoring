@@ -45,7 +45,7 @@ def save_corse_slice(args, ex_dt):
         args.fold = fold
         mypath = PathPos(args.eval_id)
 
-        label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"
+        label_file = mypath.label_excel_fpath  # "dataset/SSc_DeepLearning/GohScores.xlsx"
         seed = 49
         all_loader = LoadPos2Score(mypath, label_file, seed, args.fold, args.total_folds, args.ts_level_nb)
         valid_dataloader = all_loader.load()
