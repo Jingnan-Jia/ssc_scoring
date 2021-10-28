@@ -243,7 +243,7 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     net_parameters = futil.count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
     log_dict['net_parameters'] = net_parameters
-    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
+    label_file = mypath.label_excel_fpath # "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
     seed = 49  # for split of  cross-validation
     log_dict['data_shuffle_seed'] = seed
     net = net.to(device)
