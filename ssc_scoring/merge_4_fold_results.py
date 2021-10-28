@@ -1,4 +1,7 @@
 # merge the results from 4 folds
+import sys
+sys.path.append("..")
+
 from typing import Sequence
 
 import numpy as np
@@ -7,8 +10,7 @@ import os
 from ssc_scoring.mymodules.confusion_test import confusion
 import myutil.myutil as futil
 from ssc_scoring.compute_metrics import metrics
-import sys
-sys.path.append("..")
+
 
 # pred_1 = "/data/jjia/ssc_scoring/observer_agreement/16_patients/LKT2_16patients.csv"
 #
@@ -107,7 +109,7 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
 
 
 if __name__ == "__main__":
-    run_pos = False
-    ex_ls = [1725, 1726, 1727, 1728]
+    run_pos = True
+    ex_ls = [193, 194, 276, 277]
 
     merge(run_pos, ex_ls)
