@@ -219,13 +219,19 @@ def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, sav
 
     if occ_status=='healthy':
         occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/healthy/healthy.mha"
-    elif occ_status=='diseased':
-        occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/diseased/diseased.mha"
+    elif 'diseased' in occ_status:
+        if occ_status=='diseased_gg':
+            occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/diseased/diseased_gg.mha"
+        elif occ_status=='diseased_ret':
+            occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/diseased/diseased_ret.mha"
+        else:
+            occ_seed = "/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/diseased/diseased.mha"
     occ_patch = generate_candidate(occ_seed)  # the healthy image is filled by healthy patches
 
     # print(f'x_np.mean: {x_mean}, x_np.std: {x_std}, ')
     # print(f"sum of lung mask: {np.sum(lung_mask.numpy())}")
     savefig(True, lung_mask, 'lung_mask.png', occlusion_dir)
+    savefig(True, x_np[0], f"ori_image_tot_{int(out_ori_1)}_gg_{int(out_ori_2)}_ret_{int(out_ori_3)}.png", occlusion_dir)
 
     # nb_ptchs = math.ceil(512 / patch_size)
     ptch = patch_size
@@ -244,18 +250,7 @@ def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, sav
             mask = cv2.blur(mask_ori, (5, 5))
             # new_x = copy.deepcopy(x_np)  # shape [0, 512, 512], avoid changing the original x-np
             tmp = x_np[0] * (1-mask) + occ_patch * mask
-            if save_occ_x:
-                savefig(True, tmp, str(i) + '_' + str(j) + '_occlusion_x.png', occlusion_dir)
 
-                tmp2 = copy.deepcopy(tmp)
-                edge = 5
-                tmp2[i : i + edge, j : j + ptch] = 1
-                tmp2[i + ptch - edge: i + ptch, j: j + ptch] = 1
-                tmp2[i : i + ptch, j : j + edge] = 1
-                tmp2[i : i + ptch, j+ ptch - edge: j+ ptch] = 1
-
-
-                savefig(True, tmp2, str(i) + '_' + str(j) + '_occlusion_x_contour.png', occlusion_dir)
             # import matplotlib.pyplot as plt
             # plt.figure()
             # fig, ax = plt.subplots()
@@ -289,6 +284,21 @@ def occlusion_map(patch_size, x, y, net, lung_mask=None, occlusion_dir=None, sav
             dif_1 = out_1 - out_ori_1  # use np.rint to ignore the random noise
             dif_2 = out_2 - out_ori_2
             dif_3 = out_3 - out_ori_3
+
+            if save_occ_x:
+                if i%patch_size==0 and j%patch_size==0:  # do not save all steps
+                    savefig(True, tmp, f"{i}_{j}_x_tot_{int(out_1)}_gg_{int(out_2)}_ret_{int(out_3)}.png", occlusion_dir)
+                    save_x_countor = False
+                    if save_x_countor:
+                        tmp2 = copy.deepcopy(tmp)
+                        edge = 5
+                        tmp2[i : i + edge, j : j + ptch] = 1
+                        tmp2[i + ptch - edge: i + ptch, j: j + ptch] = 1
+                        tmp2[i : i + ptch, j : j + edge] = 1
+                        tmp2[i : i + ptch, j+ ptch - edge: j+ ptch] = 1
+
+                        savefig(True, tmp2, f"{i}_{j}_occlusion_x_tot_{int(out_1)}_gg_{int(out_2)}_ret_{int(out_3)}.png", occlusion_dir)
+
             # print(f"out_1: {np.rint(out_1)}, out_2: {np.rint(out_2)}, out_3: {np.rint(out_3)}, "
             #       f"dif_1: {dif_1}, dif_2: {dif_2}, dif_3: {dif_3}")
             # threshold = 3  # mae difference greater than 3 is regarded valuable
@@ -448,7 +458,7 @@ def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int, occ_status='h
     args.batch_size=15  # 15/3=5, all 5 levels in the same patient will be loaded in one batch
     mypath = Path(net_id)  # get path
     print(f"current dir: {os.path.abspath('.')}")  # make sure the current path is 'ssc_scoring'
-    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
+    label_file = mypath.label_excel_fpath  # "dataset/GohScores.xlsx"  # labels are from here
     seed = 49  # for split of  cross-validation
     all_loader = LoadScore(mypath, label_file, seed, args, nb_img=None, require_lung_mask=True)  # data loader
     train_dataloader, validaug_dataloader, valid_dataloader, test_dataloader = all_loader.load()
@@ -463,7 +473,7 @@ def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int, occ_status='h
     nb_img= 0
     for data in tqdm(valid_dataloader):
         nb_img += 1
-        print(f"nb_img, {nb_img}")
+        # print(f"nb_img, {nb_img}")
 
         if nb_img> max_img_nb:
             break
@@ -480,12 +490,12 @@ def batch_occlusion(net_id: int, patch_size: int, max_img_nb: int, occ_status='h
                 level_dir = get_level_dir(img_fpath)
                 # if 'Pat_135' not in pat_dir:
                 #     continue
-                occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps_occ_by' + occ_status, pat_dir, level_dir)
-                occlusion_map(patch_size, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=False, stride=patch_size//4, occ_status=occ_status)
+                occlusion_map_dir = os.path.join(mypath.id_dir, 'occlusion_maps_occ_by_' + occ_status, pat_dir, level_dir)
+                occlusion_map(patch_size, x_, y_, net, lung_mask, occlusion_map_dir, save_occ_x=True, stride=patch_size//4, occ_status=occ_status)
 
 
 if __name__ == '__main__':
-    occ_status = 'diseased' # 'diseased' or 'healthy'
+    occ_status = 'healthy' # 'diseased' or 'healthy' or 'diseased_ret'
     id = 1658
     patch_size = 64
     # grid_nb = 10
