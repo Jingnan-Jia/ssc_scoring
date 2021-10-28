@@ -20,24 +20,24 @@ def get_args():
     parser.add_argument('--fc1_nodes', help='the number of nodes of fc2 layer, original is 4096', type=int,
                         default=1024)
     parser.add_argument('--total_folds', choices=(4, 5), help='4-fold training', type=int, default=4)
-    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='1 to 4', type=int, default=4)
+    parser.add_argument('--fold', choices=(1, 2, 3, 4), help='1 to 4', type=int, default=1)
     parser.add_argument('--valid_period', help='how many epochs between 2 validation', type=int, default=5)
     parser.add_argument('--workers', help='number of workers for dataloader', type=int, default=6)
-    parser.add_argument('--ts_level_nb', choices=(235, 240), help='if customer sampler?', type=int, default=240)
+    parser.add_argument('--ts_level_nb', choices=(235, 240, 250), help='if customer sampler?', type=int, default=250)
     parser.add_argument('--loss', choices=('mse', 'mae', 'smooth_mae', 'mse+mae', 'msehigher'), help='mode', type=str,
                         default='mse')
     parser.add_argument('--pretrained', choices=(1, 0), help='pretrained or not', type=int, default=0)
     parser.add_argument('--epochs', help='total epochs', type=int, default=1000)
     parser.add_argument('--weight_decay', help='L2 regularization', type=float,
                         default=0.0001)  # must be a float number !
-    parser.add_argument('--batch_size', help='batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', help='batch_size', type=int, default=5)
     parser.add_argument('--outfile', help='output file when running by script instead of pycharm', type=str)
     parser.add_argument('--hostname', help='hostname of the server', type=str)
     parser.add_argument('--remark', help='comments on this experiment', type=str)
 
     # Exclusive args
     parser.add_argument('--train_on_level', choices=(1, 2, 3, 4, 5, 0), help='level 0 denotes all', type=int,
-                        default=2)
+                        default=0)
     parser.add_argument('--level_node', choices=(1, 0), help='if network has an extra level node', type=int, default=0)
     parser.add_argument('--kd', choices=('dist', 'transf', 'no'), help='mode', type=str, default='no')
     parser.add_argument('--kd_t_name', choices=('resnet3d_10', 'resnet3d_18', 'resnet3d_34', 'resnet3d_50',
@@ -45,7 +45,7 @@ def get_args():
                         type=str, default='resnet3d_34')
     parser.add_argument('--infer_2nd', choices=(1, 0), help='', type=int, default=0)
     parser.add_argument('--resample_z', help='resample along z axis', choices=(0, 256, 512, 800, 1024),
-                        type=int, default=1024)
+                        type=int, default=256)
     parser.add_argument('--z_size', help='length of patch along z axil ', type=int, default=192)
     parser.add_argument('--y_size', help='length of patch along y axil ', type=int, default=256)
     parser.add_argument('--x_size', help='length of patch along x axil ', type=int, default=256)
