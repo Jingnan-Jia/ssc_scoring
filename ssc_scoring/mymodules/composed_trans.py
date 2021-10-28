@@ -16,7 +16,7 @@ import ssc_scoring
 from monai.transforms import ScaleIntensityRanged
 
 
-def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace = None) -> monai.transforms.Compose:
+def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace = None, tr_x=None) -> monai.transforms.Compose:
     """Return composed transforms for Goh score  prediction.
 
     .. Note::
@@ -38,7 +38,7 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
 
     """
     key = "image_key"
-    rotation = 90
+    rotation = 30
     vertflip = 0.5
     horiflip = 0.5
     shift = 10 / 512
@@ -51,17 +51,18 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
                                               retp_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/ret/ret.mha",
                                               gg_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/gg/gg.mha",
                                               mode=mode, sys_pro_in_0=args.sys_pro_in_0,
-                 retp_blur=args.retp_blur,
-                 gg_blur=args.gg_blur,
-                 sampler=args.sampler,
-                 gen_gg_as_retp=args.gen_gg_as_retp,
-                 gg_increase=args.gg_increase))
+                                              retp_blur=args.retp_blur,
+                                              gg_blur=args.gg_blur,
+                                              sampler=args.sampler,
+                                              gen_gg_as_retp=args.gen_gg_as_retp,
+                                              gg_increase=args.gg_increase,
+                                              tr_x=tr_x))
         xforms.extend([
             AddChanneld(),
             RandomAffined(key=key, degrees=rotation, translate=(shift, shift), scale=(1 - scale, 1 + scale)),
             # CenterCropd(image_size),
-            RandomHorizontalFlipd(key, p=horiflip),
-            RandomVerticalFlipd(key, p=vertflip),
+            # RandomHorizontalFlipd(key, p=horiflip),
+            # RandomVerticalFlipd(key, p=vertflip),
             # RandGaussianNoised()
         ])
     else:
@@ -200,5 +201,3 @@ def xformd_pos(mode: str = 'train', level_node: int = 0, train_on_level: int = 0
     transform = monai.transforms.Compose(xforms)
 
     return transform
-
-
