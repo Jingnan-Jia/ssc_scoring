@@ -3,8 +3,8 @@
 # @Author  : Jingnan
 # @Email   : jiajingnan2222@gmail.com
 import random
+from medutils.medutils import load_itk
 
-import myutil.myutil as futil
 import numpy as np
 import torch
 # import streamlit as st
@@ -26,7 +26,7 @@ class ReconDatasetd(Dataset):
     def __init__(self, data_x_names, transform=None):
         self.data_x_names = data_x_names
         print("loading 3D CT ...")
-        self.data_x = [futil.load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
+        self.data_x = [load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
         self.data_x_np = [i[0] for i in self.data_x]
 
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
@@ -89,12 +89,12 @@ class SynDataset(Dataset):
             self.data_x_names = self.data_x_names[index]
             self.data_y_list = self.data_y_list[index]
         print('loading data ...')  # All images are loaded. It is 2D slices, so gpu memory is okay to fit them.
-        self.data_x = [futil.load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
+        self.data_x = [load_itk(x, require_ori_sp=True) for x in tqdm(self.data_x_names)]
         self.synthesis = synthesis
         if self.synthesis or self.require_lung_mask:  # return lung mask in the data dictionary
             mask_end = "_lung_mask"  # load all lung masks
             self.lung_masks_names = [x.split('.mha')[0] + mask_end + ".mha" for x in tqdm(self.data_x_names)]
-            self.lung_masks = [futil.load_itk(x, require_ori_sp=False) for x in tqdm(self.lung_masks_names)]
+            self.lung_masks = [load_itk(x, require_ori_sp=False) for x in tqdm(self.lung_masks_names)]
             # self.lung_masks = []
 
 

@@ -9,7 +9,7 @@ import pandas as pd
 import SimpleITK as sitk
 import numpy as np
 import os
-from myutil.myutil import get_all_ct_names, load_itk, save_itk
+from medutils.medutils import load_itk
 import matplotlib.pyplot as plt
 import csv
 

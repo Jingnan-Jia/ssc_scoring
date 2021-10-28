@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import myutil.myutil as futil
+from medutils.medutils import icc
 
 from ssc_scoring.mymodules.confusion_test import confusion, read_check
 
@@ -58,5 +58,5 @@ if __name__ == "__main__":
     bland_in_1 = True
     adap_markersize = False
     metrics(pred_fpath, label_fpath, bland_in_1, adap_markersize)
-    icc = futil.icc(label_fpath, pred_fpath)
-    print('icc:', icc)
+    icc_value = icc(label_fpath, pred_fpath)
+    print('icc:', icc_value)

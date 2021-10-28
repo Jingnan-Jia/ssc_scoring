@@ -9,7 +9,7 @@ sys.path.append("..")
 
 import os
 
-import myutil.myutil as futil
+from medutils.medutils import save_itk
 
 from ssc_scoring.mymodules.mydata import LoadPos2Score
 from ssc_scoring.mymodules.path import PathPos
@@ -67,7 +67,7 @@ def save_corse_slice(args, ex_dt):
                     print(full_pth)
                     origin_ls = [float(i) for i in batch_data['origin_key'][1:]]
                     space_ls = [float(i) for i in batch_data['space_key'][1:]]
-                    futil.save_itk(full_pth, slice, origin_ls, space_ls)  # slice does not have origin and space along z
+                    save_itk(full_pth, slice, origin_ls, space_ls)  # slice does not have origin and space along z
 
     print('Finish all things!')
 

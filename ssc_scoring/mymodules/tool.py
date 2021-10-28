@@ -8,8 +8,8 @@ import os
 import shutil
 import time
 from typing import Union, Tuple
+from medutils.medutils import icc
 
-import myutil.myutil as futil
 import numpy as np
 import nvidia_smi
 import pandas as pd
@@ -123,7 +123,7 @@ def compute_metrics(mypath: Union[PathScore, PathPos],
             out_dt = confusion(label, pred)
             log_dict.update(out_dt)
 
-            icc_ = futil.icc(label, pred)
+            icc_ = icc(label, pred)
             log_dict.update(icc_)
         except FileNotFoundError:
             continue

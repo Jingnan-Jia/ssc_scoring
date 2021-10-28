@@ -26,7 +26,8 @@ from torchvision import models
 import json
 from ssc_scoring.run import get_net, Path
 from torch.utils.data import Dataset, DataLoader
-import myutil.myutil as futil
+from medutils.medutils import load_itk
+
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -136,8 +137,8 @@ def generate_candidate(fpath: str, image_size: int = 512):
         Filled image, shape: [512, 512]
     """
     ori_image_fpath = fpath.split('.mha')[0] + '_ori.mha'
-    egg = futil.load_itk(fpath)
-    # ori = futil.load_itk(ori_image_fpath)
+    egg = load_itk(fpath)
+    # ori = load_itk(ori_image_fpath)
     normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
     egg = normalize0to1(egg)
     # egg[egg > 1500] = 1500

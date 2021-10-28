@@ -7,7 +7,6 @@ import torch.nn as nn
 import torchvision.models as models
 from ssc_scoring.mymodules.summary import summary
 import copy
-import myutil.myutil as futil
 
 class ReconNet(nn.Module):
     def __init__(self, reg_net, input_size=512):

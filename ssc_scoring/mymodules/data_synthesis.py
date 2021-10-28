@@ -9,7 +9,7 @@ from multiprocessing import Manager, Lock
 from typing import (Union)
 
 import cv2
-import myutil.myutil as futil
+from medutils.medutils import load_itk
 import numpy as np
 import torch
 from torchvision.transforms import CenterCrop, RandomAffine
@@ -260,8 +260,8 @@ class SysthesisNewSampled(RandomizableTransform, Transform):
         # ori_image_fpath = fpath.split('.mha')[0] + '_ori.mha'
         egg_fpath = random.choice(eggs_fpath)
         print(f'randomly select this egg: {egg_fpath}')
-        egg = futil.load_itk(egg_fpath)
-        # ori = futil.load_itk(ori_image_fpath)
+        egg = load_itk(egg_fpath)
+        # ori = load_itk(ori_image_fpath)
         # normalize the egg using the original image information
         normalize0to1 = ScaleIntensityRange(a_min=-1500.0, a_max=1500.0, b_min=0.0, b_max=1.0, clip=True)
         egg = normalize0to1(egg)

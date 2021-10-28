@@ -13,8 +13,7 @@ import threading
 import time
 from statistics import mean
 from typing import Dict, Optional, Union
-
-import myutil.myutil as futil
+from medutils.medutils import count_parameters
 import torch
 import torch.nn as nn
 
@@ -211,7 +210,7 @@ def train(id: int, log_dict: dict, args):
         net: torch.nn.Module = get_net_pos(name=args.net, nb_cls=outs, level_node=args.level_node)
         enc_t = None
 
-    net_parameters = futil.count_parameters(net)
+    net_parameters = count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
     log_dict['net_parameters'] = net_parameters
 

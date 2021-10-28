@@ -11,7 +11,8 @@ import time
 from typing import (Optional, Union, Dict)
 
 import matplotlib
-import myutil.myutil as futil
+from medutils.medutils import count_parameters
+
 import torch
 import torch.nn as nn
 
@@ -240,7 +241,7 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     mypath = Path(id_)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     net = get_net(args.net, 3, args) if args.r_c == "r" else get_net(args.net, 21, args)  # 3 scores per image
-    net_parameters = futil.count_parameters(net)
+    net_parameters = count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
     log_dict['net_parameters'] = net_parameters
     label_file = mypath.label_excel_fpath # "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here

@@ -6,7 +6,8 @@ import os
 import random
 from typing import Dict, Optional, Union, Hashable, Sequence
 
-import myutil.myutil as futil
+from medutils.medutils import load_itk
+
 import numpy as np
 import pandas as pd
 import torch
@@ -35,7 +36,7 @@ class LoadDatad(Transform):
     def __call__(self, data: TransInOut) -> TransInOut:
         fpath = data['fpath_key']
         world_pos = np.array(data['world_key']).astype(np.float32)
-        data_x = futil.load_itk(fpath, require_ori_sp=True)
+        data_x = load_itk(fpath, require_ori_sp=True)
         print('load a image')
         x = data_x[0]  # shape order: z, y, x
         # print("cliping ... ")

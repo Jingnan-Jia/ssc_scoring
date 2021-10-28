@@ -4,7 +4,8 @@
 # @Email   : jiajingnan2222@gmail.com
 import torch
 import numpy as np
-import myutil.myutil as futil
+from medutils.medutils import load_itk
+
 import cv2
 import torchvision.models as models
 import torch.nn as nn
@@ -59,7 +60,7 @@ class GradCAM():
         self.Level =str(pat_level)
         self.img_fpath = self.mypath.data_dir + "/SSc_DeepLearning/" + self.pat_name + "/Level" + self.Level + "_middle.mha"
 
-        image, origin, space = futil.load_itk(self.img_fpath, require_ori_sp=True)
+        image, origin, space = load_itk(self.img_fpath, require_ori_sp=True)
         image_len = image.shape[0]
         image[image < -1500] = -1500
         image[image > 1500] = 1500

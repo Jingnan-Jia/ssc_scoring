@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import os
 from ssc_scoring.mymodules.confusion_test import confusion
-import myutil.myutil as futil
+from medutils.medutils import icc
 from ssc_scoring.compute_metrics import metrics
 
 
@@ -104,8 +104,8 @@ def merge(run_pos: bool, ex_ls: Sequence) -> None:
         pred_all_path =  label_all_dir+ '/' + mode + pred_postfix + ".csv"
 
         metrics(pred_all_path, label_all_path, bland_in_1, adap_markersize)
-        icc = futil.icc(label_all_path, pred_all_path)
-        print('icc: ', icc)
+        icc_value = icc(label_all_path, pred_all_path)
+        print('icc: ', icc_value)
 
 
 if __name__ == "__main__":

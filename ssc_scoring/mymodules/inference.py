@@ -6,7 +6,8 @@
 from typing import (Union, Dict)
 
 import monai
-import myutil.myutil as futil
+import medutils.medutils as futil
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
