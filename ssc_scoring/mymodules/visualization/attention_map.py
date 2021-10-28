@@ -70,7 +70,7 @@ class GradCAM():
         img = torch.tensor(img)
 
         img_id = int(self.img_fpath.split('/')[-2].split('_')[-1])
-        label_file = "/data/jjia/ssc_scoring/dataset/SSc_DeepLearning/GohScores.xlsx"
+        label_file = self.mypath.label_excel_fpath # "/data/jjia/ssc_scoring/dataset/GohScores.xlsx"
         df_excel = pd.read_excel(label_file, engine='openpyxl')
         df_excel = df_excel.set_index('PatID')
 
