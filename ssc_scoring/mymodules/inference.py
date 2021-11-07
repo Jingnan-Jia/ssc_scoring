@@ -19,26 +19,29 @@ from ssc_scoring.mymodules.path import PathPos as Path
 
 def SlidingLoader(fpath, world_pos, z_size, stride=1, batch_size=1, mode='valid', args=None):
     print(f'start load {fpath} for sliding window inference')
-    xforms = [LoadDatad(), NormImgPosd()]
-
+    xforms = [LoadDatad(), NormImgPosd()]  #
     trans = monai.transforms.Compose(xforms)
 
     data = trans({'fpath_key': fpath, 'world_key': world_pos})
-
     raw_x = data['image_key']
-    data['label_in_img_key'] = np.array(data['label_in_img_key'][args.train_on_level - 1])
 
-    label = data['label_in_img_key']
-    print('data_world_key', data['world_key'])
+    assert raw_x.shape[0] > z_size  # shape along z should be higher than z_size
 
-    assert raw_x.shape[0] > z_size
-    start_lower: int = label - z_size
-    start_higher: int = label + z_size
-    start_lower = max(0, start_lower)
-    start_higher = min(raw_x.shape[0], start_higher)
+    if args.train_on_level or args.level_node:  # the output 3D patch should be around the specific level
+        data['label_in_img_key'] = np.array(data['label_in_img_key'][args.train_on_level - 1])
+        label = data['label_in_img_key']
+        start_lower: int = label - z_size  # start lower than this value can not crop a patch including the level
+        start_lower = max(0, start_lower)  # if start_lower<0, use 0
+
+        start_higher: int = label  # start higher than this value can not include the level
+        start_higher = min(raw_x.shape[0] - z_size, start_higher) # if start_higher > raw_x.shape[0]- z_size
+    else:  # if not level is assigned, start should range from 0 to raw_x.shape[0] - z_size
+        start_lower = 0
+        start_higher = raw_x.shape[0] - z_size
+    # print('data_world_key', data['world_key'])
 
     # ranges = raw_x.shape[0] - z_size
-    print(f'ranges: {start_lower} to {start_higher}')
+    print(f'start point ranges: {start_lower} to {start_higher}')
 
     batch_patch = []
     batch_new_label = []
@@ -46,7 +49,7 @@ def SlidingLoader(fpath, world_pos, z_size, stride=1, batch_size=1, mode='valid'
     i = 0
 
     start = start_lower
-    while start < label:
+    while start < start_higher:
         if i < batch_size:
             print(f'start: {start}, i: {i}')
             if args.infer_2nd:
