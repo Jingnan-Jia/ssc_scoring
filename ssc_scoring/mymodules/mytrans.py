@@ -37,7 +37,7 @@ class LoadDatad(Transform):
         fpath = data['fpath_key']
         world_pos = np.array(data['world_key']).astype(np.float32)
         data_x = load_itk(fpath, require_ori_sp=True)
-        print('load a image')
+        # print('load a image')
         x = data_x[0]  # shape order: z, y, x
         # print("cliping ... ")
         x[x < -1500] = -1500
@@ -121,7 +121,7 @@ def cropd(d: TransInOut, start: Sequence[int], z_size: int, y_size: int, x_size:
     """
     d[key] = d[key][start[0]:start[0] + z_size, start[1]:start[1] + y_size,
              start[2]:start[2] + x_size]
-    d['label_in_patch_key'] = d['label_in_img_key'] - start[0]  # image is shifted up, and relative position down
+    d['label_in_patch_key'] = d['ori_label_in_img_key'] - start[0]  # image is shifted up, and relative position down
 
     d['label_in_patch_key'][d['label_in_patch_key'] < 0] = 0  # position outside the edge would be set as edge
     d['label_in_patch_key'][d['label_in_patch_key'] > z_size] = z_size  # position outside the edge would be set as edge
@@ -185,6 +185,8 @@ class RandCropLevelRegiond(RandomizableTransform):
     If start is not given, use random start pointt; else use the given start coordinate values.
     Only keep the label of the current level: label_in_img.shape=(1,), label_in_patch.shape=(1,)
     and add a level_key to data dick.
+
+    # do not need to check the start.
     """
 
     def __init__(self, level_node: int, train_on_level: int, height: int, rand_start: bool,
@@ -208,26 +210,28 @@ class RandCropLevelRegiond(RandomizableTransform):
         if self.height > d[self.key].shape[0]:
             raise Exception(f"desired height {self.height} is greater than image size_z {d['image_key'].shape[0]}")
 
-        if self.train_on_level != 0:
-            self.level = self.train_on_level  # only input data from this level
-        else:
-            if self.level_node != 0:
-                self.level = random.randint(1, 5)  # 1,2,3,4,5 level is randomly selected
+        if self.train_on_level or self.level_node:  # specific level needed
+            if self.train_on_level != 0:
+                level = self.train_on_level  # only input data from this level
             else:
-                raise Exception("Do not need RandCropLevelRegiond because level_node==0 and train_on_level==0")
+                level = random.randint(1, 5)  # 1,2,3,4,5 level is randomly selected
 
-        d['label_in_img_key'] = np.array(d['ori_label_in_img_key'][self.level - 1]).reshape(
-            -1, )  # keep the current label for the current level
-        label: int = d['label_in_img_key']  # z slice number
-        lower: int = max(0, label - self.height)
-        if self.rand_start:
-            start = random.randint(lower, label)  # between lower and label
-        else:
-            start = int(self.start)
+            d['label_in_img_key'] = np.array(d['ori_label_in_img_key'][level - 1]).reshape(-1, )
+            label: int = d['label_in_img_key']  # z slice number
+            lower: int = max(0, label - self.height)
+            if self.rand_start:
+                start = random.randint(lower, label)  # between lower and label
+            else:
+                start = int(self.start)
             if start < lower:
                 raise Exception(f"start position {start} is lower than the lower line {lower}")
             if start > label:
                 raise Exception(f"start position {start} is higher than the label line {label}")
+
+            d['world_key'] = np.array(d['ori_world_key'][level - 1]).reshape(-1, )
+            d['level_key'] = np.array(level).reshape(-1, )
+        else:
+            start = int(self.start)
 
         end = int(start + self.height)
         if end > d[self.key].shape[0]:
@@ -236,9 +240,10 @@ class RandCropLevelRegiond(RandomizableTransform):
         d[self.key] = d[self.key][start: end].astype(np.float32)
 
         d['label_in_patch_key'] = d['label_in_img_key'] - start
+        d['world_key'] = d['ori_world_key']
+        d['level_key'] = None
 
-        d['world_key'] = np.array(d['ori_world_key'][self.level - 1]).reshape(-1, )
-        d['level_key'] = np.array(self.level).reshape(-1, )
+
 
         return d
 
