@@ -53,7 +53,6 @@ class LoaderInit(ABC):
             self.ts_id = [7, 9, 11, 12, 16, 19, 20, 21, 26, 28, 29, 35, 36, 37, 40, 46, 47, 49,
                           57, 58, 59, 60, 62, 66, 68, 77, 83, 116, 117, 118, 128, 134, 137, 140, 144,
                           149, 158, 170, 179, 187, 189, 196, 203, 206, 209, 210, 216, 227, 238, 263]
-
         else:
             raise Exception('please use correct testing dataset')
         self.level_node = level_node
@@ -129,6 +128,10 @@ class LoaderInit(ABC):
         tr_pt_idx, vd_pt_idx = kf_list[self.fold - 1]
         tr_pt = tr_vd_pt[tr_pt_idx]
         vd_pt = tr_vd_pt[vd_pt_idx]
+        print('tr_pats:\n', tr_pt)
+        print('vd_pats:\n', vd_pt)
+        print('ts_pats:\n', ts_pt)
+
 
         tr_x, tr_y = self.load_data_of_pats(tr_pt)
         vd_x, vd_y = self.load_data_of_pats(vd_pt)
@@ -177,15 +180,14 @@ class LoadPos(LoaderInit):
             self.save_xy(x, y, mode)
         # tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:2], tr_y[:2], vd_x[:2], vd_y[:2], ts_x[:2], ts_y[:2]
         # print(tr_x)
-        cache_nb = len(tr_x) if len(tr_x) < 50 else 50
+        # cache_nb = len(tr_x) if len(tr_x) < 50 else 50
         tr_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(tr_x, tr_y)]
         vd_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(vd_x, vd_y)]
         ts_data = [{'fpath_key': x, 'world_key': y} for x, y in zip(ts_x, ts_y)]
-        tr_dataset = monai.data.SmartCacheDataset(data=tr_data, transform=self.xformd('train'), replace_rate=0.2,
-                                                  cache_num=cache_nb, num_init_workers=4, num_replace_workers=6)
+        tr_dataset = monai.data.CacheDataset(data=tr_data, transform=self.xformd('train'), num_workers=4, cache_rate=1)
         vdaug_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('train'), num_workers=4, cache_rate=1)
         vd_dataset = monai.data.CacheDataset(data=vd_data, transform=self.xformd('valid'), num_workers=4, cache_rate=1)
-        ts_dataset = monai.data.PersistentDataset(data=ts_data, transform=self.xformd('valid'), cache_dir="persistent_cache")
+        ts_dataset = monai.data.CacheDataset(data=ts_data, transform=self.xformd('valid'), num_workers=4, cache_rate=1)
         # self.workers = 0
         train_dataloader = DataLoader(tr_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.workers,
                                       pin_memory=False, persistent_workers=True)
@@ -227,7 +229,7 @@ class LoadPos(LoaderInit):
                  'valid': {'dl': valid_dataloader, 'ds': vd_dataset},
                  'validaug': {'dl': validaug_dataloader, 'ds': vdaug_dataset},
                  'test': {'dl': test_dataloader, 'ds': ts_dataset}}
-        tr_dataset.start()
+        # tr_dataset.start()
         return data_dt
 
 
@@ -327,7 +329,7 @@ class LoadScore(LoaderInit):
             sampler = None
         else:
             if self.sys_ratio:
-                sampler, self.args.sys_ratio_in_0 = sampler_by_disext(tr_y, self.sys_ratio)
+                sampler, self.args.sys_pro_in_0 = sampler_by_disext(tr_y, self.sys_ratio)
             else:
                 sampler = sampler_by_disext(tr_y)
 
