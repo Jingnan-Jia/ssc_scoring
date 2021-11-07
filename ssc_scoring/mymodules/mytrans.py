@@ -121,7 +121,7 @@ def cropd(d: TransInOut, start: Sequence[int], z_size: int, y_size: int, x_size:
     """
     d[key] = d[key][start[0]:start[0] + z_size, start[1]:start[1] + y_size,
              start[2]:start[2] + x_size]
-    d['label_in_patch_key'] = d['label_in_img_key'] - start[0]  # image is shifted up, and relative position down
+    d['label_in_patch_key'] = d['ori_label_in_img_key'] - start[0]  # image is shifted up, and relative position down
 
     d['label_in_patch_key'][d['label_in_patch_key'] < 0] = 0  # position outside the edge would be set as edge
     d['label_in_patch_key'][d['label_in_patch_key'] > z_size] = z_size  # position outside the edge would be set as edge
