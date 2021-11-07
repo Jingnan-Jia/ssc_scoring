@@ -123,8 +123,9 @@ def start_run(args, mode, net, enc_t, dataloader_dt, loss_fun, loss_fun_mae, opt
             if args.kd == 'dist':
                 print(f'loss: {loss.item()}')
             else:
-                print('loss:', loss.item(), 'pred:', (pred / sp_z).clone().detach().cpu().numpy(),
-                      'label:', (batch_y / sp_z).clone().detach().cpu().numpy())
+                print('loss:', loss.item())
+                print('pred:', (pred / sp_z).clone().detach().cpu().numpy())
+                print('label:', (batch_y / sp_z).clone().detach().cpu().numpy())
         t2 = time.time()
         t_train_per_step.append(t2 - t1)
         # print(f't_tr_step:{t2 - t1}')
@@ -137,8 +138,8 @@ def start_run(args, mode, net, enc_t, dataloader_dt, loss_fun, loss_fun_mae, opt
         if 'gpuname' not in log_dict:
             p1 = threading.Thread(target=gpu_info, args=(args.outfile,))
             p1.start()
-    if mode=='train':
-        dataset.update_cache()
+    # if mode=='train':
+    #     dataset.update_cache()
     t_load_data, t_train_per_step = mean(t_load_data), mean(t_train_per_step)
     if "t_load_data" not in log_dict:
         log_dict.update({"t_load_data": t_load_data, "t_train_per_step": t_train_per_step})
@@ -209,12 +210,13 @@ def train(id: int, log_dict: dict, args):
     else:
         net: torch.nn.Module = get_net_pos(name=args.net, nb_cls=outs, level_node=args.level_node)
         enc_t = None
+    print('net:', net)
 
     net_parameters = count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
     log_dict['net_parameters'] = net_parameters
 
-    label_file = "dataset/SSc_DeepLearning/GohScores.xlsx"
+    label_file = mypath.label_excel_fpath  # "dataset/SSc_DeepLearning/GohScores.xlsx"
     log_dict['label_file'] = label_file
     seed = 49
     log_dict['data_shuffle_seed'] = seed
@@ -256,7 +258,7 @@ def train(id: int, log_dict: dict, args):
         record_best_preds(net, data_dt, mypath, args)
         log_dict = compute_metrics(mypath, PathPos(args.eval_id), log_dict,
                                    modes=['train', 'valid', 'test', 'validaug'])
-    data_dt['train']['ds'].shutdown()
+    # data_dt['train']['ds'].shutdown()
     print('Finish all things!')
     return log_dict
 
