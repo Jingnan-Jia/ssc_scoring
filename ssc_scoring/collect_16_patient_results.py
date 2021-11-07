@@ -129,10 +129,94 @@ def collect(ex_id_dict) -> None:
     print(f"The collected results are saved at {saved_path}")
 
 
+def collect_16_pats(ex_id: int) -> None:
+    """Collect testing results of 16 patients. All 16 patients are in testing dataset.
+
+       :param ex_id: experiment ID.
+       :return: None. The results will be saved to disk.
+
+       Example:
+
+       >>> ex_id = 32
+       >>> collect(ex_id)
+
+       """
+
+    label_all_dir = Path(ex_id)
+    pat_list = ['028', '049', '066', '070', '210', '238', '179', '227',
+                '263', '140', '026', '029', '077', '170', '203', '209']
+
+    pred_path = Path(ex_id).pred_end5('test')
+    data_name_path = os.path.dirname(pred_path) + '/test_data.csv'
+    df = pd.read_csv(data_name_path, header=None)
+    df_first_c = df.loc[:, 0]
+    index_ls = []
+    new_pat_list = []
+    for level in [1, 2, 3, 4, 5]:
+        for pat_id in pat_list:
+            for index, row in df_first_c.iteritems():
+                pat_name = 'Pat_' + pat_id
+                if pat_name in row:
+                    if 'Level' + str(level) + "_middle" in row:
+                        index_ls.append(index)
+                        new_pat_list.append(pat_id)
+                        break
+
+    df_pred = pd.read_csv(pred_path)
+
+    id_ls_, pred_ls_, level_ls_ = [], [], []
+    for pat_id, idx in zip(new_pat_list, index_ls):
+        pred = df_pred.iloc[idx].to_numpy()  # np.array shape: [3,]
+        pred_ls_.append(pred)
+        id_ls_.append(int(pat_id))
+        level_ls_.append(int(level))
+        #
+        # id_ls = []
+        # pred_ls = []
+        # level_ls = []
+        # for id, pred in pred_dt.items():
+        #     pred_ls.append(pred)
+        #     id_ls.append(int(id))
+        #     level_ls.append(int(level))
+
+    id_ls, pred_ls, level_ls = zip(*sorted(zip(id_ls_, pred_ls_, level_ls_)))
+        # id_ls_.extend(id_ls)
+        # pred_ls_.extend(pred_ls)
+        # level_ls_.extend(level_ls)
+
+    saved_path = label_all_dir + "/16pats_pred.csv"
+    # saved_path = str(ex_id_dict[1]) + '_16pats_pred.csv'
+    if not os.path.isfile(saved_path):  # write head
+        with open(saved_path, 'w') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            head = ['ID', 'Level', 'TOT', 'GG', 'RET']
+            writer.writerow(head)
+
+    with open(saved_path, 'a') as f:
+        csvwriter = csv.writer(f)
+        for pred, id, level in zip(pred_ls, id_ls, level_ls):
+            row = [id, level, *pred]
+            # row.extend(pred)
+            csvwriter.writerow(row)
+
+    # saved_id_path = label_all_dir + "/16pats_id.csv"
+    # with open(saved_id_path, 'w') as f:
+    #     csvwriter = csv.writer(f)
+    #     for pred in id_ls_:
+    #         csvwriter.writerow([pred])
+
+    print(f"The collected results are saved at {saved_path}")
+
+
 if __name__ == "__main__":
     # different fold corresponds to different experiment.
-    ex_id_dict = {1: 1405,
-                  2: 1404,
-                  3: 1411,
-                  4: 1410}
-    collect(ex_id_dict)
+    all_16_pats_in_ts_data = True
+    if all_16_pats_in_ts_data:
+        ex_id = 32
+        collect_16_pats(ex_id)
+    else:
+        ex_id_dict = {1: 1405,
+                      2: 1404,
+                      3: 1411,
+                      4: 1410}
+        collect(ex_id_dict)
