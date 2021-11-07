@@ -20,7 +20,6 @@ from torch.utils.data import WeightedRandomSampler
 from ssc_scoring.mymodules.confusion_test import confusion
 from ssc_scoring.mymodules.path import PathScoreInit, PathPosInit, PathScore, PathPos
 
-
 def sampler_by_disext(tr_y, sys_ratio=None) -> WeightedRandomSampler:
     """Balanced sampler according to score distribution of disext.
 
@@ -57,9 +56,7 @@ def sampler_by_disext(tr_y, sys_ratio=None) -> WeightedRandomSampler:
         weight[idx_0] += sys_ratio
         sys_ratio_in_0 = sys_ratio / weight[idx_0]
 
-        print("class_sample_count", class_sample_count)
-        print("unique_disext", disext_unique_list)
-        print("original weight", weight)
+
 
         # weight[idx_0] += 20 * weight[idx_0]
         # samples_weight = np.array([weight[disext_unique_list.index(t)] for t in disext_np])
@@ -72,6 +69,10 @@ def sampler_by_disext(tr_y, sys_ratio=None) -> WeightedRandomSampler:
         # print(samples_weight)
     else:
         weight = 1. / class_sample_count
+
+    print("class_sample_count", class_sample_count)
+    print("unique_disext", disext_unique_list)
+    print("weight: ", weight)
 
     samples_weight = np.array([weight[disext_unique_list.index(t)] for t in disext_np])
 
