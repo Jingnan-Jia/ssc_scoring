@@ -190,7 +190,8 @@ def xformd_pos(mode: str = 'train', level_node: int = 0, train_on_level: int = 0
         if mode == 'train':
             # xforms.extend([RandomCropPosd(), RandGaussianNoised()])
             # pass
-            xforms.extend([RandomCropPosd(z_size=z_size, y_size=y_size, x_size=x_size)])
+            xforms.extend([RandomCropPosd(z_size=z_size, y_size=y_size, x_size=x_size),
+                           RandGaussianNoised()])
 
         else:
             xforms.extend([CenterCropPosd(z_size=z_size, y_size=y_size, x_size=x_size)])
