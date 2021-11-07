@@ -196,7 +196,6 @@ class CropPosd(ThreadUnsafe):
 
         d['label_in_patch_key'] = d['label_in_img_key'] - self.start
         d['world_key'] = d['ori_world_key']
-        d['level_key'] = None
 
         return d
 
@@ -256,7 +255,7 @@ class RandCropLevelRegiond(RandomizableTransform):
             end = d[self.key].shape[0]
             start = end - self.height
         d[self.key] = d[self.key][start: end].astype(np.float32)
-
+        d['label_in_patch_key'] = d['label_in_img_key'] - self.start
 
         return d
 
