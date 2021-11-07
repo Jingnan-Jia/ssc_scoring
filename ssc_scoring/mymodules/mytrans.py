@@ -11,7 +11,7 @@ from medutils.medutils import load_itk
 import numpy as np
 import pandas as pd
 import torch
-from monai.transforms import RandGaussianNoise, Transform, RandomizableTransform
+from monai.transforms import RandGaussianNoise, Transform, RandomizableTransform, ThreadUnsafe
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, CenterCrop, RandomAffine
 
 TransInOut = Dict[Hashable, Optional[Union[np.ndarray, torch.Tensor, str, int]]]
@@ -121,11 +121,9 @@ def cropd(d: TransInOut, start: Sequence[int], z_size: int, y_size: int, x_size:
     """
     d[key] = d[key][start[0]:start[0] + z_size, start[1]:start[1] + y_size,
              start[2]:start[2] + x_size]
-    d['label_in_patch_key'] = d['ori_label_in_img_key'] - start[0]  # image is shifted up, and relative position down
-
+    d['label_in_patch_key'] = d['label_in_img_key'] - start[0]  # image is shifted up, and relative position down
     d['label_in_patch_key'][d['label_in_patch_key'] < 0] = 0  # position outside the edge would be set as edge
     d['label_in_patch_key'][d['label_in_patch_key'] > z_size] = z_size  # position outside the edge would be set as edge
-
     return d
 
 
@@ -180,6 +178,28 @@ class RandomCropPosd(RandomizableTransform):
         return d
 
 
+class CropPosd(ThreadUnsafe):
+    def __init__(self, start: Optional[int], height: Optional[int], key = 'image_key' ):
+        self.start = start
+        self.key = key
+        self.height = height
+        self.end = int(self.start + self.height)
+
+    def __call__(self, data):
+        d = data
+        if self.height > d[self.key].shape[0]:
+            raise Exception(f"desired height {self.height} is greater than image size_z {d['image_key'].shape[0]}")
+        if self.end > d[self.key].shape[0]:
+            self.end = d[self.key].shape[0]
+            self.start = self.end - self.height
+        d[self.key] = d[self.key][self.start: self.end].astype(np.float32)
+
+        d['label_in_patch_key'] = d['label_in_img_key'] - self.start
+        d['world_key'] = d['ori_world_key']
+        d['level_key'] = None
+
+        return d
+
 class RandCropLevelRegiond(RandomizableTransform):
     """ Crop a 3D patch which include one specified level (the position of 5 levels are given).
     If start is not given, use random start pointt; else use the given start coordinate values.
@@ -192,6 +212,7 @@ class RandCropLevelRegiond(RandomizableTransform):
     def __init__(self, level_node: int, train_on_level: int, height: int, rand_start: bool,
                  start: Optional[int] = None, key='image_key'):
         """
+        used if self.train_on_level or self.level_node:
 
         :param rand_start: during training (rand_start=True), inference (rand_start=False).
         :param start: If rand_start is True, start would be ignored.
@@ -200,7 +221,7 @@ class RandCropLevelRegiond(RandomizableTransform):
         self.train_on_level = train_on_level
         self.height = height
         self.rand_start = rand_start
-        self.start = start
+        self.start = int(start)
         self.key = key
         super().__init__()
 
@@ -210,39 +231,31 @@ class RandCropLevelRegiond(RandomizableTransform):
         if self.height > d[self.key].shape[0]:
             raise Exception(f"desired height {self.height} is greater than image size_z {d['image_key'].shape[0]}")
 
-        if self.train_on_level or self.level_node:  # specific level needed
-            if self.train_on_level != 0:
-                level = self.train_on_level  # only input data from this level
-            else:
-                level = random.randint(1, 5)  # 1,2,3,4,5 level is randomly selected
+        if self.train_on_level != 0:
+            level = self.train_on_level  # only input data from this level
+        else:
+            level = random.randint(1, 5)  # 1,2,3,4,5 level is randomly selected
 
-            d['label_in_img_key'] = np.array(d['ori_label_in_img_key'][level - 1]).reshape(-1, )
-            label: int = d['label_in_img_key']  # z slice number
-            lower: int = max(0, label - self.height)
-            if self.rand_start:
-                start = random.randint(lower, label)  # between lower and label
-            else:
-                start = int(self.start)
-            if start < lower:
-                raise Exception(f"start position {start} is lower than the lower line {lower}")
-            if start > label:
-                raise Exception(f"start position {start} is higher than the label line {label}")
-
-            d['world_key'] = np.array(d['ori_world_key'][level - 1]).reshape(-1, )
-            d['level_key'] = np.array(level).reshape(-1, )
+        d['label_in_img_key'] = np.array(d['ori_label_in_img_key'][level - 1]).reshape(-1, )
+        label: int = d['label_in_img_key']  # z slice number
+        lower: int = max(0, label - self.height)
+        if self.rand_start:
+            start = random.randint(lower, label)  # between lower and label
         else:
             start = int(self.start)
+        if start < lower:
+            raise Exception(f"start position {start} is lower than the lower line {lower}")
+        if start > label:
+            raise Exception(f"start position {start} is higher than the label line {label}")
+
+        d['world_key'] = np.array(d['ori_world_key'][level - 1]).reshape(-1, )
+        d['level_key'] = np.array(level).reshape(-1, )
 
         end = int(start + self.height)
         if end > d[self.key].shape[0]:
             end = d[self.key].shape[0]
             start = end - self.height
         d[self.key] = d[self.key][start: end].astype(np.float32)
-
-        d['label_in_patch_key'] = d['label_in_img_key'] - start
-        d['world_key'] = d['ori_world_key']
-        d['level_key'] = None
-
 
 
         return d
