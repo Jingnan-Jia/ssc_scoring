@@ -50,8 +50,8 @@ class LoaderInit(ABC):
                            144, 158, 187, 189, 194, 196, 206, 210, 216, 230, 236, 238]
 
         elif self.ts_level_nb == 250:  # 50 patients
-            self.ts_id = [7, 9, 11, 12, 16, 19, 20, 21, 26, 28, 29, 35, 36, 37, 40, 46, 47, 49,
-                          57, 58, 59, 60, 62, 66, 68, 77, 83, 116, 117, 118, 128, 134, 137, 140, 144,
+            self.ts_id = [7, 9, 11, 12, 16, 19, 20, 21, 26, 28, 35, 36, 37, 40, 46, 47, 49, 57,
+                          58, 59, 60, 62, 66, 68, 70, 77, 83, 116, 117, 118, 128, 134, 137, 140, 144,
                           149, 158, 170, 179, 187, 189, 196, 203, 206, 209, 210, 216, 227, 238, 263]
         else:
             raise Exception('please use correct testing dataset')
@@ -128,6 +128,9 @@ class LoaderInit(ABC):
         tr_pt_idx, vd_pt_idx = kf_list[self.fold - 1]
         tr_pt = tr_vd_pt[tr_pt_idx]
         vd_pt = tr_vd_pt[vd_pt_idx]
+
+        tr_pt = tr_vd_pt  # todo: the two lines needs to be commented if after berend's style training.
+        vd_pt = ts_pt  # todo: the two lines needs to be commented if after berend's style training.
         print('tr_pats:\n', tr_pt)
         print('vd_pats:\n', vd_pt)
         print('ts_pats:\n', ts_pt)
