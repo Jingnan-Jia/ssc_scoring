@@ -142,9 +142,9 @@ def collect_16_pats(ex_id: int) -> None:
 
        """
 
-    label_all_dir = Path(ex_id)
-    pat_list = ['028', '049', '066', '070', '210', '238', '179', '227',
-                '263', '140', '026', '029', '077', '170', '203', '209']
+    label_all_dir = Path(ex_id).id_dir
+    pat_list = ['026', '028',  '049', '066', '070', '077', '140', # '029' should be removed !
+                '170', '179', '203', '209', '210', '227', '238', '263']
 
     pred_path = Path(ex_id).pred_end5('test')
     data_name_path = os.path.dirname(pred_path) + '/test_data.csv'
@@ -152,6 +152,7 @@ def collect_16_pats(ex_id: int) -> None:
     df_first_c = df.loc[:, 0]
     index_ls = []
     new_pat_list = []
+    level_ls_ = []
     for level in [1, 2, 3, 4, 5]:
         for pat_id in pat_list:
             for index, row in df_first_c.iteritems():
@@ -160,16 +161,17 @@ def collect_16_pats(ex_id: int) -> None:
                     if 'Level' + str(level) + "_middle" in row:
                         index_ls.append(index)
                         new_pat_list.append(pat_id)
+                        level_ls_.append(int(level))
                         break
 
     df_pred = pd.read_csv(pred_path)
 
-    id_ls_, pred_ls_, level_ls_ = [], [], []
+    id_ls_, pred_ls_  = [], []
     for pat_id, idx in zip(new_pat_list, index_ls):
         pred = df_pred.iloc[idx].to_numpy()  # np.array shape: [3,]
         pred_ls_.append(pred)
         id_ls_.append(int(pat_id))
-        level_ls_.append(int(level))
+
         #
         # id_ls = []
         # pred_ls = []
@@ -179,7 +181,7 @@ def collect_16_pats(ex_id: int) -> None:
         #     id_ls.append(int(id))
         #     level_ls.append(int(level))
 
-    id_ls, pred_ls, level_ls = zip(*sorted(zip(id_ls_, pred_ls_, level_ls_)))
+    # id_ls, pred_ls, level_ls = zip(*sorted(zip(id_ls_, pred_ls_, level_ls_)))
         # id_ls_.extend(id_ls)
         # pred_ls_.extend(pred_ls)
         # level_ls_.extend(level_ls)
@@ -194,7 +196,7 @@ def collect_16_pats(ex_id: int) -> None:
 
     with open(saved_path, 'a') as f:
         csvwriter = csv.writer(f)
-        for pred, id, level in zip(pred_ls, id_ls, level_ls):
+        for pred, id, level in zip(pred_ls_, id_ls_, level_ls_):
             row = [id, level, *pred]
             # row.extend(pred)
             csvwriter.writerow(row)
@@ -212,7 +214,7 @@ if __name__ == "__main__":
     # different fold corresponds to different experiment.
     all_16_pats_in_ts_data = True
     if all_16_pats_in_ts_data:
-        ex_id = 32
+        ex_id = 1826
         collect_16_pats(ex_id)
     else:
         ex_id_dict = {1: 1405,

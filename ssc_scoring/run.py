@@ -12,7 +12,8 @@ from typing import (Optional, Union, Dict)
 
 import matplotlib
 from medutils.medutils import count_parameters
-
+from mlflow import log_metric, log_param, log_params
+import mlflow
 import torch
 import torch.nn as nn
 
@@ -23,7 +24,7 @@ matplotlib.use('Agg')
 from statistics import mean
 import threading
 from ssc_scoring.mymodules.set_args import get_args
-from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, compute_metrics, eval_net_mae
+from ssc_scoring.mymodules.tool import record_1st, record_2nd, record_gpu_info, compute_metrics, eval_net_mae, record_artifacts, record_cgpu_info
 from ssc_scoring.mymodules.path import PathScore as Path
 from ssc_scoring.mymodules.myloss import get_loss
 from ssc_scoring.mymodules.networks.cnn_fc2d import get_net, ReconNet
@@ -102,7 +103,7 @@ def start_run(args, mode, net, dataloader, loss_fun, loss_fun_mae, opt, mypath, 
 
     t0 = time.time()
     t_load_data, t_to_device, t_train_per_step = [], [], []  # time of loading data, to_device and train a step
-    for data in dataloader:
+    for ite, data in enumerate(dataloader):
         if 'label_key' not in data:
             batch_x, batch_y = data['image_key'], data['image_key']
         else:
@@ -125,7 +126,6 @@ def start_run(args, mode, net, dataloader, loss_fun, loss_fun_mae, opt, mypath, 
             batch_y = batch_y.to(device)
         if device == torch.device('cuda'):  # on GPU
             with torch.cuda.amp.autocast():
-
                 if mode != 'train':
                     with torch.no_grad():
                         pred = net(batch_x)
@@ -181,9 +181,13 @@ def start_run(args, mode, net, dataloader, loss_fun, loss_fun_mae, opt, mypath, 
 
         print(f"loss: {loss.item()}, pred.shape: {pred.shape}")
         # with torch.profiler.record_function("average_loss"):
+        loss_item = loss.item()
+        loss_mae_item = loss_mae.item()
+        log_metric(mode+'LossBatch', loss_item, epoch_idx * len(dataloader) + ite)
+        log_metric(mode+'MAEBatch', loss_mae_item, epoch_idx * len(dataloader) + ite)
 
-        total_loss += loss.item()
-        total_loss_mae += loss_mae.item()
+        total_loss += loss_item
+        total_loss_mae += loss_mae_item
         total_loss_mae_end5 += loss_mae_end5.item()
         batch_idx += 1
 
@@ -200,6 +204,9 @@ def start_run(args, mode, net, dataloader, loss_fun, loss_fun_mae, opt, mypath, 
     ave_loss = total_loss / batch_idx
     ave_loss_mae = total_loss_mae / batch_idx
     ave_loss_mae_end5 = total_loss_mae_end5 / batch_idx
+    log_metric(mode + 'LossEpoch', ave_loss, epoch_idx)
+    log_metric(mode + 'MAEEpoch', ave_loss_mae, epoch_idx)
+
     print("mode:", mode, "loss: ", ave_loss, "loss_mae: ", ave_loss_mae, "loss_mae_end5: ", ave_loss_mae_end5)
 
     if not os.path.isfile(loss_path):
@@ -243,10 +250,13 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     net = get_net(args.net, 3, args) if args.r_c == "r" else get_net(args.net, 21, args)  # 3 scores per image
     net_parameters = count_parameters(net)
     net_parameters = str(round(net_parameters / 1024 / 1024, 2))
+    log_param('net_parameters_M', net_parameters)
     log_dict['net_parameters'] = net_parameters
     label_file = mypath.label_excel_fpath # "dataset/SSc_DeepLearning/GohScores.xlsx"  # labels are from here
     seed = 49  # for split of  cross-validation
     log_dict['data_shuffle_seed'] = seed
+    log_param('data_shuffle_seed', seed)
+
     net = net.to(device)
     print('move net to device')
 
@@ -254,6 +264,8 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
     loss_fun_mae = nn.L1Loss()
     lr = 1e-4  # learning rate is fixed
     log_dict['lr'] = lr
+    log_param('lr', lr)
+
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=args.weight_decay)  # weight decay is L2 weight norm
 
     if args.eval_id:  # evaluate trained network
@@ -298,6 +310,7 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
         if (i % args.valid_period == 0) or (i > epochs * 0.9):  # validation period become 1 at the end
             valid_mae_best = start_run(args, 'valid', net, valid_dataloader, loss_fun, loss_fun_mae, opt,
                                        mypath, i, valid_mae_best)
+            log_metric('valid_mae_best', valid_mae_best, i)
             start_run(args, 'validaug', net, validaug_dataloader, loss_fun, loss_fun_mae, opt, mypath, i)
             start_run(args, 'test', net, test_dataloader, loss_fun, loss_fun_mae, opt, mypath, i)
 
@@ -313,9 +326,23 @@ def train(args: Namespace, id_: int, log_dict: Dict[str, LogType]) -> Dict[str, 
 
 
 if __name__ == "__main__":
-    args = get_args()
-    log_dict: Dict[str, LogType] = {}  # a global dict to store variables saved to log files
+    mlflow.set_tracking_uri("http://nodelogin02:5000")
+    mlflow.set_experiment("ssc_scoring")
 
+    args = get_args()
     id: int = record_1st('score', args)  # write super parameters from set_args.py to record file.
-    log_dict = train(args, id, log_dict)
-    record_2nd('score', current_id=id, log_dict=log_dict, args=args)  # write more parameters & metrics to record file.
+
+    with mlflow.start_run(run_name=str(id), tags={"mlflow.note.content": args.remark}):
+        p1 = threading.Thread(target=record_cgpu_info, args=(args.outfile,))
+        p1.start()
+
+        log_params(vars(args))
+        log_dict: Dict[str, LogType] = {}  # a global dict to store variables saved to log files
+
+        log_param('ID', id)
+        log_dict = train(args, id, log_dict)
+        log_params(log_dict)
+        record_2nd('score', current_id=id, log_dict=log_dict, args=args)  # write more parameters & metrics to record file.
+
+        p1.do_run = False  # stop the thread
+        p1.join()

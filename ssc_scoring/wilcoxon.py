@@ -11,19 +11,19 @@ from scipy.stats import wilcoxon, ttest_ind
 # seed(1)
 # generate two independent samples
 def main():
-	data1_fpath = 'results/models/1405_1404_1411_1410/valid_pred_int_end5.csv'  # sys + pre_trained
-	data2_fpath = 'results/models/1585_1586_1587_1588/valid_pred_int_end5.csv'  # sys + pre_trained, NormData from -1 to 1
+	# data1_fpath = 'results/models/1405_1404_1411_1410/valid_pred_int_end5.csv'  # sys + pre_trained
+	# data2_fpath = 'results/models/1585_1586_1587_1588/valid_pred_int_end5.csv'  # sys + pre_trained, NormData from -1 to 1
 
 	# data1_fpath = 'results/models/1136_1132_1135_1134/valid_pred_int_end5.csv'  # wo sys, wo sampler, with re_trrained
 	# data2_fpath = 'results/models/1481_1114_1115_1116/valid_pred_int_end5.csv'  # wo sys, with sampler, with re_trrained
 
-	ref_fpath = 'results/models/1405_1404_1411_1410/valid_label.csv'
+	# ref_fpath = 'results/models/1405_1404_1411_1410/valid_label.csv'
 
 	# data1_fpath = 'results/models_pos/193_194_276_277/valid_pred.csv'
 	# data2_fpath = 'results/models_pos/193_194_276_277/valid_label.csv'
 	# ref_fpath = ''
-	data1_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/AST2_16patients.csv"
-	data2_fpath = "/data/jjia/ssc_scoring/ssc_scoring/results/models/1405_1404_1411_1410/16pats_pred.csv"
+	data1_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/LKT2_16patients.csv"
+	data2_fpath = "/data/jjia/ssc_scoring/ssc_scoring/results/models/1826/16pats_pred.csv"
 
 	ref_fpath = "/data/jjia/ssc_scoring/ssc_scoring/dataset/observer_agreement/16_patients/ground_truth_16patients.csv"
 

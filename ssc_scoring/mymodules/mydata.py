@@ -129,8 +129,8 @@ class LoaderInit(ABC):
         tr_pt = tr_vd_pt[tr_pt_idx]
         vd_pt = tr_vd_pt[vd_pt_idx]
 
-        tr_pt = tr_vd_pt  # todo: the two lines needs to be commented if after berend's style training.
-        vd_pt = ts_pt  # todo: the two lines needs to be commented if after berend's style training.
+        # tr_pt = tr_vd_pt  # todo: the two lines needs to be commented if after berend's style training.
+        # vd_pt = ts_pt  # todo: the two lines needs to be commented if after berend's style training.
         print('tr_pats:\n', tr_pt)
         print('vd_pats:\n', vd_pt)
         print('ts_pats:\n', ts_pt)
@@ -313,6 +313,8 @@ class LoadScore(LoaderInit):
         tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = self.prepare_data()
         for x, y, mode in zip([tr_x, vd_x, ts_x], [tr_y, vd_y, ts_y], ['train', 'valid', 'test']):
             self.save_xy(x, y, mode)
+        # tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:2], tr_y[:2], vd_x[:2], vd_y[:2], ts_x[:2], ts_y[:2]
+
         if self.nb_img:
             tr_x, tr_y, vd_x, vd_y, ts_x, ts_y = tr_x[:self.nb_img], tr_y[:self.nb_img], vd_x[:self.nb_img], \
                                                  vd_y[:self.nb_img], ts_x[:self.nb_img], ts_y[:self.nb_img]

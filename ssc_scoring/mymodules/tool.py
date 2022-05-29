@@ -19,6 +19,9 @@ from torch.utils.data import WeightedRandomSampler
 
 from ssc_scoring.mymodules.confusion_test import confusion
 from ssc_scoring.mymodules.path import PathScoreInit, PathPosInit, PathScore, PathPos
+import threading
+from mlflow import log_metric, log_param, start_run, end_run, log_params, log_artifact
+import psutil
 
 def sampler_by_disext(tr_y, sys_ratio=None) -> WeightedRandomSampler:
     """Balanced sampler according to score distribution of disext.
@@ -545,3 +548,115 @@ def record_gpu_info(outfile) -> Tuple:
     else:
         print('outfile is None, can not show GPU memory info')
         return None, None, None
+
+
+def record_cgpu_info(outfile) -> Tuple:
+    """Record GPU information to `outfile`.
+
+    Args:
+        outfile: The format of `outfile` is: slurm-[JOB_ID].out
+
+    Returns:
+        gpu_name, gpu_usage, gpu_util
+
+    Examples:
+
+        >>> record_gpu_info('slurm-98234.out')
+
+        or
+
+        :func:`ssc_scoring.run.gpu_info` and :func:`ssc_scoring.run_pos.gpu_info`
+
+    """
+    t = threading.currentThread()
+    t.do_run = True
+
+    if outfile:
+        cpu_count = psutil.cpu_count()
+        log_param('cpu_count', cpu_count)
+
+        pid = os.getpid()
+        python_process = psutil.Process(pid)
+
+        jobid_gpuid = outfile.split('-')[-1]
+        tmp_split = jobid_gpuid.split('_')[-1]
+        if len(tmp_split) == 2:
+            gpuid = tmp_split[-1]
+        else:
+            gpuid = 0
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(gpuid)
+        gpuname = nvidia_smi.nvmlDeviceGetName(handle)
+        gpuname = gpuname.decode("utf-8")
+        log_param('gpuname', gpuname)
+        # log_dict['gpuname'] = gpuname
+
+        # log_dict['gpu_mem_usage'] = gpu_mem_usage
+        # gpu_util = 0
+        i = 0
+        period = 2  # 2 seconds
+        while i<60*20:  # stop signal passed from t, monitor 20 minutes
+            if t.do_run:
+                memoryUse = python_process.memory_info().rss / 2. ** 30  # memory use in GB...I think
+                log_metric('cpu_mem_used_GB_in_process_rss', memoryUse, step=i)
+                memoryUse = python_process.memory_info().vms / 2. ** 30  # memory use in GB...I think
+                log_metric('cpu_mem_used_GB_in_process_vms', memoryUse, step=i)
+                cpu_percent = psutil.cpu_percent()
+                log_metric('cpu_util_used_percent', cpu_percent, step=i)
+                # gpu_mem = dict(psutil.virtual_memory()._asdict())
+                # log_params(gpu_mem)
+                cpu_mem_used = psutil.virtual_memory().percent
+                log_metric('cpu_mem_used_percent', cpu_mem_used, step=i)
+
+                res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
+                # gpu_util += res.gpu
+                log_metric("gpu_util", res.gpu, step=i)
+
+                info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+                # gpu_mem_used = str(_bytes_to_megabytes(info.used)) + '/' + str(_bytes_to_megabytes(info.total))
+                gpu_mem_used = _bytes_to_megabytes(info.used)
+                log_metric('gpu_mem_used_MB', gpu_mem_used, step=i)
+
+                time.sleep(period)
+                i += period
+            else:
+                print('record_cgpu_info do_run is True, let stop the process')
+                break
+        print('It is time to stop this process: record_cgpu_info')
+        return None
+        # gpu_util = gpu_util / 5
+        # gpu_mem_usage = str(gpu_mem_used) + ' MB'
+
+        # log_dict['gpu_util'] = str(gpu_util) + '%'
+        # return gpuname, gpu_mem_usage, str(gpu_util) + '%'
+
+
+    else:
+        print('outfile is None, can not show GPU memory info')
+        return None, None, None
+
+
+def record_artifacts(outfile):
+    mythread = threading.currentThread()
+    mythread.do_run = True
+    if outfile:
+        t = 0
+        while 1:  # stop signal passed from t
+            if mythread.do_run:
+                log_artifact(outfile + '_err.txt')
+                log_artifact(outfile + '_out.txt')
+                if t <= 600:  # 10 minutes
+                    period = 10
+                    t += period
+                else:
+                    period = 60
+                time.sleep(period)
+            else:
+                print('record_artifacts do_run is True, let stop the process')
+                break
+
+        print('It is time to stop this process: record_artifacts')
+        return None
+    else:
+        print(f"No output file, no log artifacts")
+        return None

@@ -48,8 +48,8 @@ def xformd_score(mode: str = 'train', synthesis: bool = False, args: Namespace =
     if mode in ['train', 'validaug']:
         if synthesis:
             xforms.append(SysthesisNewSampled(key=key,
-                                              retp_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/ret/ret.mha",
-                                              gg_fpath="/data/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/gg/gg.mha",
+                                              retp_fpath="/data1/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/ret/ret.mha",
+                                              gg_fpath="/data1/jjia/ssc_scoring/ssc_scoring/dataset/special_samples/gg/gg.mha",
                                               mode=mode, sys_pro_in_0=args.sys_pro_in_0,
                                               retp_blur=args.retp_blur,
                                               gg_blur=args.gg_blur,

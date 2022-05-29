@@ -227,13 +227,22 @@ def mean_diff_plot(m1, m2,
                 transform=trans, fontsize='large')
         # ax.text(0.05, 0.9 * (2*half_ylim), 'A)', ha="left", fontsize='xx-large', transform=trans)
 
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update(params)
+    # if ynotdiff:
+    #     ax.set_ylabel('$Obs2_{T2} \;score\;(\%)$', fontsize=15)
+    #     ax.set_xlabel('GT score (%)', fontsize=15)
+    # else:
+    #     ax.set_ylabel('$Obs2_{T2}\;-\;GT\;score\;(\%)$', fontsize=15)
+    #     ax.set_xlabel('Average score (%)', fontsize=15)
 
     if ynotdiff:
-        ax.set_ylabel('Prediction (slice number)', fontsize=15)
-        ax.set_xlabel('Reference (slice number)', fontsize=15)
+        ax.set_ylabel('L-Net (slice number)', fontsize=15)
+        ax.set_xlabel('Ground truth (slice number)', fontsize=15)
     else:
-        ax.set_ylabel('Prediction - Reference (slices)', fontsize=15)
+        ax.set_ylabel('L-Net - Ground truth (slices)', fontsize=15)
         ax.set_xlabel('Average (slice number)', fontsize=15)
+
     ax.tick_params(labelsize=13)
     fig.tight_layout()
     return fig

@@ -100,5 +100,6 @@ def extract_label(file_fpath: str) -> None:
 
 
 if __name__ == '__main__':
-    path = "results/slurmlogs/slurm-96342_0.out"
+    path = "/data/jjia/ssc_scoring/ssc_scoring/results/slurmlogs/slurm-120014_1.out"
+        # "results/slurmlogs/slurm-96342_0.out"
     extract_label(file_fpath = path)
