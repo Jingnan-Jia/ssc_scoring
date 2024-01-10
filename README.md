@@ -20,6 +20,5 @@
 
 ### Predict 5 positions from 3d CT scans
 `run_pos.py`
-
 ## Where is the trained models? 
-Because github does not allow large file repository, so I put it at [[google drive](https://drive.google.com/drive/my-drive](https://drive.google.com/drive/folders/1ZqxFKgQNO5t1Ccb6CqIXSpM6hEzkffQF?usp=sharing)https://drive.google.com/drive/folders/1ZqxFKgQNO5t1Ccb6CqIXSpM6hEzkffQF?usp=sharing).
+Because github does not allow large file repository, so I put it at [google drive](https://drive.google.com/drive/folders/1ZqxFKgQNO5t1Ccb6CqIXSpM6hEzkffQF?usp=drive_link).
