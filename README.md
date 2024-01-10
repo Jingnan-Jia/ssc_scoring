@@ -16,9 +16,10 @@
 2. `run.py --epochs=300 --mode='train' ... ` more arguments can be found in `set_args.py`.
 
 ### Predict Goh scores from 2d CT slices
-#### train and inference
-#### inference
+`run.py`
 
 ### Predict 5 positions from 3d CT scans
-#### train and inference
-#### inference
+`run_pos.py`
+
+## Where is the trained models? 
+Because github does not allow large file repository, so I put it at [google drive](https://drive.google.com/drive/my-drive).
